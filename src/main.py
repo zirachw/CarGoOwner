@@ -12,7 +12,7 @@ class MainWindow(QMainWindow):
 
         # Set the window title and dimensions
         self.setWindowTitle("CarGoOwner")
-        self.setGeometry(100, 100, 756, 491)
+        self.setGeometry(100, 100, 1512, 982)
         self.setStyleSheet("background-color : #FFFFFF")
         self.MainUI()
         
@@ -22,12 +22,49 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(main_widget)
 
         # Layouts
-        main_layout = QHBoxLayout(main_widget)  # Horizontal layout for sidebar and main area
-        sidebar_widget = QWidget()         # Sidebar (left)
+        main_layout = QHBoxLayout(main_widget) 
+        
+        # Panggil sidebar dan separator
+        sidebar, separator = self.create_sidebar()
+
+        # Tambah sidebar and separator ke main layout
+        main_layout.addWidget(sidebar)
+        main_layout.addWidget(separator)
+
+        # Main content
+        content_widget = QWidget()  
+        content_layout = QVBoxLayout(content_widget)
+
+        logo_message_wrapper = QWidget()
+        wrapper_layout = QVBoxLayout(logo_message_wrapper)
+
+        logo = QLabel()
+        LogoImg = QPixmap("./src/Component/Logo.png")
+        scaled_logo = LogoImg.scaled(400, 300, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        logo.setPixmap(scaled_logo)
+        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        welcome_label = QLabel("Welcome Back, Salsabiila!")
+        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        welcome_label.setFont(QFont("Poly", 18))
+
+        wrapper_layout.addWidget(logo)
+        wrapper_layout.addWidget(welcome_label)
+        wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Align the entire wrapper at the top
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+
+        content_layout.addWidget(logo_message_wrapper)
+
+        main_layout.addWidget(content_widget) 
+        main_layout.setStretch(2, 1)
+
+    def create_sidebar(self):
+        # Sidebar widget
+        sidebar_widget = QWidget()
         sidebar_widget.setFixedWidth(250)
         sidebar_layout = QVBoxLayout(sidebar_widget)
 
-        # Sidebar
+        # Sidebar list
         sidebar_list = QListWidget()
         sidebar_list.setSpacing(1)
         sidebar_list.setStyleSheet("""
@@ -62,48 +99,23 @@ class MainWindow(QMainWindow):
             item.setIcon(QIcon(icon_path))       # Set the custom icon
             sidebar_list.addItem(item)
         
+        # App name label
         app_name = QLabel("CarGoOwner.")
         app_name.setFont(QFont("Poly", 19))
         app_name.setStyleSheet("padding : 10px")
+
+        # Add widgets to the sidebar layout
         sidebar_layout.addWidget(app_name)
         sidebar_layout.addWidget(sidebar_list)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
-
-        main_layout.addWidget(sidebar_widget)
 
         # Separator
         separator = QLabel()
         separator.setStyleSheet("background-color: #414041;")
         separator.setFixedWidth(8)
-        main_layout.addWidget(separator)
 
-        # Main content
-        content_widget = QWidget()  
-        content_layout = QVBoxLayout(content_widget)
-
-        logo_message_wrapper = QWidget()
-        wrapper_layout = QVBoxLayout(logo_message_wrapper)
-
-        logo = QLabel()
-        LogoImg = QPixmap("./src/Component/Logo.png")
-        scaled_logo = LogoImg.scaled(400, 300, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-        logo.setPixmap(scaled_logo)
-        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        return sidebar_widget, separator  # Return both the sidebar widget and separator
         
-        welcome_label = QLabel("Welcome Back, Salsabiila!")
-        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        welcome_label.setFont(QFont("Poly", 18))
-
-        wrapper_layout.addWidget(logo)
-        wrapper_layout.addWidget(welcome_label)
-        wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Align the entire wrapper at the top
-        wrapper_layout.setContentsMargins(0, 0, 0, 0)
-
-
-        content_layout.addWidget(logo_message_wrapper)
-
-        main_layout.addWidget(content_widget) 
-        main_layout.setStretch(2, 1)  
 
 
 
