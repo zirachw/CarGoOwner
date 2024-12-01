@@ -8,11 +8,11 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Set Up Font Poly
-        QFontDatabase.addApplicationFont("./Component/Poly/Poly-Regular.ttf")
+        QFontDatabase.addApplicationFont("./src/Component/Poly/Poly-Regular.ttf")
 
         # Set the window title and dimensions
         self.setWindowTitle("CarGoOwner")
-        self.setGeometry(100, 100, 1512, 982)
+        self.setGeometry(100, 100, 756, 491)
         self.setStyleSheet("background-color : #FFFFFF")
         self.MainUI()
         
@@ -23,7 +23,6 @@ class MainWindow(QMainWindow):
 
         # Layouts
         main_layout = QHBoxLayout(main_widget)  # Horizontal layout for sidebar and main area
-        content_layout = QVBoxLayout()         # Main content (right)
         sidebar_widget = QWidget()         # Sidebar (left)
         sidebar_widget.setFixedWidth(250)
         sidebar_layout = QVBoxLayout(sidebar_widget)
@@ -52,11 +51,11 @@ class MainWindow(QMainWindow):
 
         # Add icons and labels to the sidebar
         menu_items = [
-            ("Mobil", "./Component/MobilIcon.png"),       # Replace with your custom icon path
-            ("Pelanggan", "./Component/PelangganIcon.png"),
-            ("Peminjaman", "./Component/PeminjamanIcon.png"),
-            ("Notifikasi", "./Component/NotifikasiIcon.png"),
-            ("Laporan", "./Component/LaporanIcon.png")
+            ("Mobil", "./src/Component/MobilIcon.png"),       # Replace with your custom icon path
+            ("Pelanggan", "./src/Component/PelangganIcon.png"),
+            ("Peminjaman", "./src/Component/PeminjamanIcon.png"),
+            ("Notifikasi", "./src/Component/NotifikasiIcon.png"),
+            ("Laporan", "./src/Component/LaporanIcon.png")
         ]
         for text, icon_path in menu_items:
             item = QListWidgetItem(f"  {text}")  # Add some spacing for aesthetics
@@ -65,7 +64,7 @@ class MainWindow(QMainWindow):
         
         app_name = QLabel("CarGoOwner.")
         app_name.setFont(QFont("Poly", 19))
-        app_name.setStyleSheet("margin : 5px")
+        app_name.setStyleSheet("padding : 10px")
         sidebar_layout.addWidget(app_name)
         sidebar_layout.addWidget(sidebar_list)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
@@ -82,20 +81,26 @@ class MainWindow(QMainWindow):
         content_widget = QWidget()  
         content_layout = QVBoxLayout(content_widget)
 
+        logo_message_wrapper = QWidget()
+        wrapper_layout = QVBoxLayout(logo_message_wrapper)
+
         logo = QLabel()
-        LogoImg = QPixmap("./Component/Logo.png")
+        LogoImg = QPixmap("./src/Component/Logo.png")
         scaled_logo = LogoImg.scaled(400, 300, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         logo.setPixmap(scaled_logo)
         logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
         
         welcome_label = QLabel("Welcome Back, Salsabiila!")
         welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         welcome_label.setFont(QFont("Poly", 18))
 
-        content_layout.addWidget(logo)
-        content_layout.addSpacing(2)
-        content_layout.addWidget(welcome_label)
+        wrapper_layout.addWidget(logo)
+        wrapper_layout.addWidget(welcome_label)
+        wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Align the entire wrapper at the top
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+
+
+        content_layout.addWidget(logo_message_wrapper)
 
         main_layout.addWidget(content_widget) 
         main_layout.setStretch(2, 1)  
