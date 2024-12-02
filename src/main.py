@@ -9,8 +9,7 @@ class MainWindow(QMainWindow):
 
         # Set Up Font Poly
         QFontDatabase.addApplicationFont("./src/Component/Poly/Poly-Regular.ttf")
-
-        # Set the window title and dimensions
+        
         self.setWindowTitle("CarGoOwner")
         self.setGeometry(100, 100, 1512, 982)
         self.setStyleSheet("background-color : #FFFFFF")
