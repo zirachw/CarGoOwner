@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWindow, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QWidget, QHBoxLayout, QStackedWidget, QPushButton
 from PyQt5.QtGui import QFont, QIcon, QFontDatabase, QPixmap
 from PyQt5.QtCore import Qt
+from Mobil.MobilUI import MobilUI
 
 class MenuUI(QMainWindow):
     def __init__(self):
@@ -18,19 +19,28 @@ class MenuUI(QMainWindow):
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
 
-        # Layouts
+        # Layout
         main_layout = QHBoxLayout(main_widget) 
         
         # Create stacked widget
         self.stackedWidget = QStackedWidget()
+        # Panggil Menu UI
         self.menu = self.MainUI()
-        self.mobil = QWidget()
+        # Panggil Mobil UI
+        self.mobil = MobilUI()
+        # Panggil Peminjaman UI
         self.peminjaman = QWidget()
+        # Panggil Pelanggan UI
         self.pelanggan = QWidget()
+        # Panggil Jadwal Pengembalian UI
         self.jadwalpengembalian = QWidget()
+        # Panggil Pembayaran Rental UI
         self.pembayaranrental = QWidget()
+        # Panggil Histori Peminjaman Mobil UI
         self.historipeminjamanmobil = QWidget()
+        # Panggil Status Ketersediaan Mobil UI
         self.statusketersediaanmobil = QWidget()
+        # Panggil Pendapatan UI
         self.pendapatan = QWidget()
 
         self.stackedWidget.addWidget(self.menu)
@@ -132,8 +142,6 @@ class MenuUI(QMainWindow):
                         lambda current_item, _, func=func, label=submenu_text: 
                         func() if current_item.text(0).strip() == label else None
                     )
-
-        # Connect the itemClicked signal to a slot
         sidebar_tree.itemClicked.connect(self.handle_item_click)
 
         # Nama Aplikasi
@@ -190,8 +198,6 @@ class MenuUI(QMainWindow):
     def onClickPendapatan(self):
         self.stackedWidget.setCurrentWidget(self.pendapatan)
         
-                    
-    
     def MainUI(self):
         # Main content
         content_widget = QWidget()  
