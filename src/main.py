@@ -1,7 +1,8 @@
 import sys
+import MenuUI.MenuUI as MenuUI
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWindow, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QWidget, QHBoxLayout
-from PyQt5.QtGui import QFont, QPixmap, QIcon, QFontDatabase
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont, QIcon, QFontDatabase
+
 
 class MainWindowQMain(QMainWindow):
     def __init__(self):
@@ -13,9 +14,7 @@ class MainWindowQMain(QMainWindow):
         self.setWindowTitle("CarGoOwner")
         self.setGeometry(100, 100, 1512, 982)
         self.setStyleSheet("background-color : #FFFFFF")
-        self.MainUI()
         
-    def MainUI(self):
         # Main container widget
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
@@ -30,32 +29,13 @@ class MainWindowQMain(QMainWindow):
         main_layout.addWidget(sidebar)
         main_layout.addWidget(separator)
 
-        # Main content
-        content_widget = QWidget()  
-        content_layout = QVBoxLayout(content_widget)
+        menu = MenuUI.MenuUI()
+        main_content = menu.MainUI()
 
-        logo_message_wrapper = QWidget()
-        wrapper_layout = QVBoxLayout(logo_message_wrapper)
-
-        logo = QLabel()
-        LogoImg = QPixmap("./src/Component/Logo.png")
-        scaled_logo = LogoImg.scaled(400, 300, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-        logo.setPixmap(scaled_logo)
-        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        welcome_label = QLabel("Welcome Back, Salsabiila!")
-        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        welcome_label.setFont(QFont("Poly", 22))
-
-        wrapper_layout.addWidget(logo)
-        wrapper_layout.addWidget(welcome_label)
-        wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Align the entire wrapper at the top
-        wrapper_layout.setContentsMargins(0, 0, 0, 0)
-
-        content_layout.addWidget(logo_message_wrapper)
-
-        main_layout.addWidget(content_widget) 
+        main_layout.addWidget(main_content) 
         main_layout.setStretch(2, 1)
+        
+
 
     def create_sidebar(self):
         # Sidebar widget
@@ -135,7 +115,7 @@ class MainWindowQMain(QMainWindow):
 
         return sidebar_widget, separator  # Return both the sidebar widget and separator
 
-    def handle_item_click(self, item, column):
+    def handle_item_click(self, item):
         if item.childCount() > 0:
             if item.isExpanded():
                 item.setExpanded(False)
