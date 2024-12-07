@@ -1,9 +1,9 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QWidget, QHBoxLayout
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWindow, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QWidget, QHBoxLayout
 from PyQt5.QtGui import QFont, QPixmap, QIcon, QFontDatabase
 from PyQt5.QtCore import Qt
 
-class MainWindow(QMainWindow):
+class MainWindowQMain(QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
         
         welcome_label = QLabel("Welcome Back, Salsabiila!")
         welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        welcome_label.setFont(QFont("Poly", 18))
+        welcome_label.setFont(QFont("Poly", 22))
 
         wrapper_layout.addWidget(logo)
         wrapper_layout.addWidget(welcome_label)
@@ -63,49 +63,69 @@ class MainWindow(QMainWindow):
         sidebar_widget.setFixedWidth(250)
         sidebar_layout = QVBoxLayout(sidebar_widget)
 
-        # Sidebar list
-        sidebar_list = QListWidget()
-        sidebar_list.setSpacing(1)
-        sidebar_list.setStyleSheet("""
-            QListWidget {
+        # Sidebar tree
+        sidebar_tree = QTreeWidget()
+        sidebar_tree.setHeaderHidden(True)
+        sidebar_tree.setExpandsOnDoubleClick(False)
+        sidebar_tree.setStyleSheet("""
+            QTreeWidget {
                 background-color: #FFFFFF;
                 border: none;
                 font-size: 14px;
             }
-            QListWidget::item {
+            QTreeWidget::item {
                 background-color: #ffffff;
                 margin: 1.5px;
-                padding: 10px;
+                padding: 13px;
                 border-radius: 10px; /* Rounded edges */
                 color: #333333;
             }
-            QListWidget::item:hover {
-                background-color: #e0e0e0; /* Lighter background on hover */
+            QTreeWidget::item:hover {
+                background-color: #e0e0e0; 
                 color: #000000; /* Change text color on hover */
+            }
+            QTreeWidget::branch:has-children:!has-siblings:closed,
+            QTreeWidget::branch:closed:has-children:has-siblings {
+                border-image: none;
+                image: none;
+            }
+            QTreeWidget::branch:open:has-children:!has-siblings,
+            QTreeWidget::branch:open:has-children:has-siblings  {
+                border-image: none;
+                image: none;
             }
         """)
 
-        # Add icons and labels to the sidebar
         menu_items = [
-            ("Mobil", "./src/Component/MobilIcon.png"),       # Replace with your custom icon path
-            ("Pelanggan", "./src/Component/PelangganIcon.png"),
-            ("Peminjaman", "./src/Component/PeminjamanIcon.png"),
-            ("Notifikasi", "./src/Component/NotifikasiIcon.png"),
-            ("Laporan", "./src/Component/LaporanIcon.png")
+            ("Mobil", "./src/Component/MobilIcon.png", []),      
+            ("Pelanggan", "./src/Component/PelangganIcon.png", []),
+            ("Peminjaman", "./src/Component/PeminjamanIcon.png", []),
+            ("Notifikasi", "./src/Component/NotifikasiIcon.png", [("Jadwal Pengembalian"), ("Pembayaran Rental")]),
+            ("Laporan", "./src/Component/LaporanIcon.png", [("Status Ketersediaan Mobil"), ("Histori Peminjaman Mobil"), ("Pendapatan")])
         ]
-        for text, icon_path in menu_items:
-            item = QListWidgetItem(f"  {text}")  # Add some spacing for aesthetics
-            item.setIcon(QIcon(icon_path))       # Set the custom icon
-            sidebar_list.addItem(item)
-        
-        # App name label
+
+        for text, icon_path, submenus in menu_items:
+            item = QTreeWidgetItem([f"  {text}"])
+            item.setFont(0, QFont("Poly", 12))
+            item.setIcon(0, QIcon(icon_path))
+            sidebar_tree.addTopLevelItem(item)
+            
+            for submenu_text in submenus:
+                submenu_item = QTreeWidgetItem([f"  {submenu_text}"])
+                submenu_item.setFont(0, QFont("Poly", 12))
+                item.addChild(submenu_item)
+
+        # Connect the itemClicked signal to a slot
+        sidebar_tree.itemClicked.connect(self.handle_item_click)
+
+        # Nama Aplikasi
         app_name = QLabel("CarGoOwner.")
-        app_name.setFont(QFont("Poly", 19))
+        app_name.setFont(QFont("Poly", 21))
         app_name.setStyleSheet("padding : 10px")
 
-        # Add widgets to the sidebar layout
+        # Widget sidebar
         sidebar_layout.addWidget(app_name)
-        sidebar_layout.addWidget(sidebar_list)
+        sidebar_layout.addWidget(sidebar_tree)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
 
         # Separator
@@ -114,13 +134,19 @@ class MainWindow(QMainWindow):
         separator.setFixedWidth(8)
 
         return sidebar_widget, separator  # Return both the sidebar widget and separator
-        
+
+    def handle_item_click(self, item, column):
+        if item.childCount() > 0:
+            if item.isExpanded():
+                item.setExpanded(False)
+            else:
+                item.setExpanded(True)
 
 
 
 def main():
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = MainWindowQMain()
     window.show()
     sys.exit(app.exec_())
 
