@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWin
 from PyQt5.QtGui import QFont, QIcon, QFontDatabase, QPixmap
 from PyQt5.QtCore import Qt
 from Mobil.MobilUI import MobilUI
+from Peminjaman.peminjamanUI import PeminjamanUI
 
 class MenuUI(QMainWindow):
     def __init__(self):
@@ -29,7 +30,7 @@ class MenuUI(QMainWindow):
         # Panggil Mobil UI
         self.mobil = MobilUI()
         # Panggil Peminjaman UI
-        self.peminjaman = QWidget()
+        self.peminjaman = PeminjamanUI(schema_path="schema.sql")
         # Panggil Pelanggan UI
         self.pelanggan = QWidget()
         # Panggil Jadwal Pengembalian UI
