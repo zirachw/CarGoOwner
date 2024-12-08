@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWindow, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QWidget, QHBoxLayout, QStackedWidget, QPushButton
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWindow, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QWidget, QHBoxLayout, QStackedWidget, QPushButton, QDesktopWidget
 from PyQt5.QtGui import QFont, QIcon, QFontDatabase, QPixmap
 from PyQt5.QtCore import Qt
 from Mobil.MobilUI import MobilUI
@@ -12,7 +12,9 @@ class MenuUI(QMainWindow):
         QFontDatabase.addApplicationFont("./src/Component/Poly/Poly-Regular.ttf")
         
         self.setWindowTitle("CarGoOwner")
-        self.setGeometry(100, 100, 1512, 982)
+        screen = QDesktopWidget().screenGeometry()
+        self.setGeometry(0, 0, screen.width(), screen.height())  
+        self.setMinimumSize(screen.width(), screen.height()) 
         self.setStyleSheet("background-color : #FFFFFF")
         
         # Main container widget
@@ -21,28 +23,22 @@ class MenuUI(QMainWindow):
 
         # Layout
         main_layout = QHBoxLayout(main_widget) 
+        main_layout.setSpacing(0)  # Remove spacing between widgets
         
         # Create stacked widget
         self.stackedWidget = QStackedWidget()
-        # Panggil Menu UI
+        # Initialize all UI components
         self.menu = self.MainUI()
-        # Panggil Mobil UI
         self.mobil = MobilUI()
-        # Panggil Peminjaman UI
         self.peminjaman = QWidget()
-        # Panggil Pelanggan UI
         self.pelanggan = QWidget()
-        # Panggil Jadwal Pengembalian UI
         self.jadwalpengembalian = QWidget()
-        # Panggil Pembayaran Rental UI
         self.pembayaranrental = QWidget()
-        # Panggil Histori Peminjaman Mobil UI
         self.historipeminjamanmobil = QWidget()
-        # Panggil Status Ketersediaan Mobil UI
         self.statusketersediaanmobil = QWidget()
-        # Panggil Pendapatan UI
         self.pendapatan = QWidget()
 
+        # Add widgets to stacked widget
         self.stackedWidget.addWidget(self.menu)
         self.stackedWidget.addWidget(self.mobil)
         self.stackedWidget.addWidget(self.peminjaman)
@@ -53,22 +49,34 @@ class MenuUI(QMainWindow):
         self.stackedWidget.addWidget(self.statusketersediaanmobil)
         self.stackedWidget.addWidget(self.pendapatan)
 
-        # Panggil sidebar dan separator
+        # Create sidebar and separator
         sidebar, separator = self.create_sidebar()
 
-        # Tambah sidebar and separator ke main layout
+        # Add widgets to main layout with specific ratios
         main_layout.addWidget(sidebar)
         main_layout.addWidget(separator)
         main_layout.addWidget(self.stackedWidget)
+        
+        # Set the current widget and maximize window
         self.stackedWidget.setCurrentWidget(self.menu)
+        self.setWindowState(Qt.WindowMaximized)
 
-        main_layout.setStretch(2, 1)
+        # Set stretch factors for layout (1:0:4 ratio)
+        main_layout.setStretch(0, 1)  # Sidebar takes 1 part
+        main_layout.setStretch(1, 0)  # Separator takes minimal space
+        main_layout.setStretch(2, 4)  # Main content takes 4 parts
         
     def create_sidebar(self):
         # Sidebar widget
         sidebar_widget = QWidget()
-        sidebar_widget.setFixedWidth(250)
+        sidebar_widget.setFixedWidth(400)  # Reduced width
         sidebar_layout = QVBoxLayout(sidebar_widget)
+        sidebar_layout.setContentsMargins(0, 30, 0, 0)  # Add top margin of 30px
+
+        # Nama Aplikasi
+        app_name = QLabel("CarGoOwner.")
+        app_name.setFont(QFont("Poly", 27))
+        app_name.setStyleSheet("padding: 17px; margin-bottom: 20px;")  # Added bottom margin
 
         # Sidebar tree
         sidebar_tree = QTreeWidget()
@@ -84,12 +92,12 @@ class MenuUI(QMainWindow):
                 background-color: #ffffff;
                 margin: 1.5px;
                 padding: 13px;
-                border-radius: 10px; /* Rounded edges */
+                border-radius: 10px;
                 color: #333333;
             }
             QTreeWidget::item:hover {
                 background-color: #e0e0e0; 
-                color: #000000; /* Change text color on hover */
+                color: #000000;
             }
             QTreeWidget::branch:has-children:!has-siblings:closed,
             QTreeWidget::branch:closed:has-children:has-siblings {
@@ -103,6 +111,7 @@ class MenuUI(QMainWindow):
             }
         """)
 
+        # Menu items setup
         menu_items = [
             ("Mobil", "./src/Component/MobilIcon.png", [], self.onClickMobil),      
             ("Pelanggan", "./src/Component/PelangganIcon.png", [], self.onClickPelanggan),
@@ -113,20 +122,17 @@ class MenuUI(QMainWindow):
 
         for text, icon_path, submenus, function in menu_items:
             if not submenus:
-                # Create a main button if no submenus exist
                 item = QTreeWidgetItem([f"  {text}"])
                 item.setFont(0, QFont("Poly", 13))
                 item.setIcon(0, QIcon(icon_path))
                 sidebar_tree.addTopLevelItem(item)
 
-                # Handle click function
                 if function:
                     sidebar_tree.itemClicked.connect(
                         lambda current_item, _, func=function, label=text: 
                         func() if current_item.text(0).strip() == label else None
                     )
             else:
-                # Create a dropdown if submenus exist
                 parent_item = QTreeWidgetItem([f"  {text}"])
                 parent_item.setFont(0, QFont("Poly", 13))
                 parent_item.setIcon(0, QIcon(icon_path))
@@ -137,29 +143,23 @@ class MenuUI(QMainWindow):
                     submenu_item.setFont(0, QFont("Poly", 12))
                     parent_item.addChild(submenu_item)
                     
-                    # Handle submenu click
                     sidebar_tree.itemClicked.connect(
                         lambda current_item, _, func=func, label=submenu_text: 
                         func() if current_item.text(0).strip() == label else None
                     )
+        
         sidebar_tree.itemClicked.connect(self.handle_item_click)
 
-        # Nama Aplikasi
-        app_name = QLabel("CarGoOwner.")
-        app_name.setFont(QFont("Poly", 27))
-        app_name.setStyleSheet("padding : 17px")
-
-        # Widget sidebar
+        # Add widgets to sidebar layout
         sidebar_layout.addWidget(app_name)
         sidebar_layout.addWidget(sidebar_tree)
-        sidebar_layout.setContentsMargins(0, 0, 0, 0)
 
         # Separator
         separator = QLabel()
         separator.setStyleSheet("background-color: #414041;")
         separator.setFixedWidth(8)
 
-        return sidebar_widget, separator 
+        return sidebar_widget, separator
 
     def handle_item_click(self, item):
         if item.childCount() > 0:
@@ -172,7 +172,7 @@ class MenuUI(QMainWindow):
         return [["Jadwal Pengembalian", self.onClickJadwalPengembalian], ["Pembayaran Rental", self.onClickPembayaranRental]]
 
     def ShowLaporanDropDown(self):
-        return [["Status Ketersediaan Mobil", self.onClickStatusKetersediaanMobil], ["Histori Peminjaman Mobil", self.onClickHistoriPeminjamanMobil], ["Pendapatan", self.onClickPendapatan]]
+        return [["Status Ketersediaan", self.onClickStatusKetersediaanMobil], ["Histori Peminjaman", self.onClickHistoriPeminjamanMobil], ["Pendapatan", self.onClickPendapatan]]
   
     def onClickMobil(self):
         self.stackedWidget.setCurrentWidget(self.mobil)
