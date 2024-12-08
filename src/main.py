@@ -16,6 +16,7 @@ class MenuUI(QMainWindow):
         self.setGeometry(0, 0, screen.width(), screen.height())  
         self.setMinimumSize(screen.width(), screen.height()) 
         self.setStyleSheet("background-color : #FFFFFF")
+        self.sidebar_width = int(screen.width() * 0.15)
         
         # Main container widget
         main_widget = QWidget()
@@ -69,7 +70,7 @@ class MenuUI(QMainWindow):
     def create_sidebar(self):
         # Sidebar widget
         sidebar_widget = QWidget()
-        sidebar_widget.setFixedWidth(400)  # Reduced width
+        sidebar_widget.setFixedWidth(self.sidebar_width)  # Reduced width
         sidebar_layout = QVBoxLayout(sidebar_widget)
         sidebar_layout.setContentsMargins(0, 30, 0, 0)  # Add top margin of 30px
 
@@ -81,6 +82,7 @@ class MenuUI(QMainWindow):
         # Sidebar tree
         sidebar_tree = QTreeWidget()
         sidebar_tree.setHeaderHidden(True)
+        sidebar_tree.setFixedWidth(self.sidebar_width - 20)
         sidebar_tree.setExpandsOnDoubleClick(False)
         sidebar_tree.setStyleSheet("""
             QTreeWidget {
@@ -98,6 +100,8 @@ class MenuUI(QMainWindow):
             QTreeWidget::item:hover {
                 background-color: #e0e0e0; 
                 color: #000000;
+                padding :10px;
+                border-radius: 10px;
             }
             QTreeWidget::branch:has-children:!has-siblings:closed,
             QTreeWidget::branch:closed:has-children:has-siblings {
