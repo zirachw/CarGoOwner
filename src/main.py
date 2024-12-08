@@ -110,6 +110,9 @@ class MenuUI(QMainWindow):
                 background-color: #e0e0e0;
                 outline: none;
             }
+            QTreeWidget::focus{
+                outline: none;
+            }
             QTreeWidget::branch:has-children:!has-siblings:closed,
             QTreeWidget::branch:closed:has-children:has-siblings {
                 border-image: none;
