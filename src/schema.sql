@@ -1,43 +1,45 @@
+PRAGMA foreign_keys = ON;
+
 CREATE TABLE Mobil (
-    NomorPlat VARCHAR(20) PRIMARY KEY,
+    NomorPlat TEXT PRIMARY KEY,  
     Gambar BLOB,
-    Model VARCHAR(100) NOT NULL,
-    Warna VARCHAR(50),
-    Tahun INT NOT NULL,
-    StatusKetersediaan BOOLEAN NOT NULL
+    Model TEXT NOT NULL,         
+    Warna TEXT,                  
+    Tahun INTEGER NOT NULL,
+    StatusKetersediaan INTEGER NOT NULL CHECK (StatusKetersediaan IN (0, 1))  
 );
 
 CREATE TABLE Pelanggan (
-    NIK VARCHAR(20) PRIMARY KEY,
-    Nama VARCHAR(100) NOT NULL,
-    Kontak VARCHAR(50) NOT NULL,
-    Alamat VARCHAR(255),
-    CreditPoint INT DEFAULT 0,
-    StatusPinjam BOOLEAN DEFAULT FALSE
+    NIK TEXT PRIMARY KEY,        
+    Nama TEXT NOT NULL,          
+    Kontak TEXT NOT NULL,        
+    Alamat TEXT,                 
+    CreditPoint INTEGER DEFAULT 0,
+    StatusPinjam INTEGER DEFAULT 0 CHECK (StatusPinjam IN (0, 1))  
 );
 
 CREATE TABLE Peminjaman (
-    IDPeminjaman INT AUTO_INCREMENT PRIMARY KEY,
-    NomorPlat VARCHAR(20) NOT NULL,
-    NIK VARCHAR(20) NOT NULL,
-    Nama VARCHAR(100) NOT NULL,
-    Kontak VARCHAR(50) NOT NULL,
+    ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+    NomorPlat TEXT NOT NULL,
+    NIK TEXT NOT NULL,
+    Nama TEXT NOT NULL,         
+    Kontak TEXT NOT NULL,       
     TanggalPeminjaman DATETIME NOT NULL,
     TanggalPengembalian DATETIME,
     TanggalPembayaran DATETIME,
     TenggatPengembalian DATETIME NOT NULL,
     TenggatPembayaran DATETIME NOT NULL,
-    BesarPembayaran BIGINT NOT NULL,
-    StatusPengembalian BOOLEAN DEFAULT FALSE,
-    StatusPembayaran BOOLEAN DEFAULT FALSE,
+    BesarPembayaran INTEGER NOT NULL, 
+    StatusPengembalian INTEGER DEFAULT 0 CHECK (StatusPengembalian IN (0, 1)), 
+    StatusPembayaran INTEGER DEFAULT 0 CHECK (StatusPembayaran IN (0, 1)),     
     FOREIGN KEY (NomorPlat) REFERENCES Mobil(NomorPlat),
     FOREIGN KEY (NIK) REFERENCES Pelanggan(NIK)
 );
 
 CREATE TABLE Notifikasi (
-    IDNotif INT AUTO_INCREMENT PRIMARY KEY,
-    IDPeminjaman INT NOT NULL,
-    JenisNotif VARCHAR(50) NOT NULL,
+    IDNotif INTEGER PRIMARY KEY AUTOINCREMENT,  
+    IDPeminjaman INTEGER NOT NULL,
+    JenisNotif TEXT NOT NULL,                 
     TanggalNotif DATETIME NOT NULL,
     FOREIGN KEY (IDPeminjaman) REFERENCES Peminjaman(IDPeminjaman)
 );
