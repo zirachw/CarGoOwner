@@ -13,11 +13,11 @@ class MenuUI(QMainWindow):
         QFontDatabase.addApplicationFont("./src/Component/Poly/Poly-Regular.ttf")
         
         self.setWindowTitle("CarGoOwner")
-        screen = QDesktopWidget().screenGeometry()
-        self.setGeometry(0, 0, screen.width(), screen.height())  
-        self.setMinimumSize(screen.width(), screen.height()) 
+        self.screen = QDesktopWidget().screenGeometry()
+        self.setGeometry(0, 0, self.screen.width(), self.screen.height())  
+        self.setMinimumSize(self.screen.width(), self.screen.height()) 
         self.setStyleSheet("background-color : #FFFFFF")
-        self.sidebar_width = int(screen.width() * 0.15)
+        self.sidebar_width = int(self.screen.width() * 0.2)
         
         # Main container widget
         main_widget = QWidget()
@@ -85,7 +85,7 @@ class MenuUI(QMainWindow):
         # Sidebar tree
         sidebar_tree = QTreeWidget()
         sidebar_tree.setHeaderHidden(True)
-        sidebar_tree.setFixedWidth(self.sidebar_width - 20)
+        sidebar_tree.setFixedWidth(self.sidebar_width)
         sidebar_tree.setExpandsOnDoubleClick(False)
         sidebar_tree.setStyleSheet("""
             QTreeWidget {
@@ -105,6 +105,10 @@ class MenuUI(QMainWindow):
                 color: #000000;
                 padding :10px;
                 border-radius: 10px;
+            }
+            QTreeWidget::item:selected {
+                background-color: #e0e0e0;
+                outline: none;
             }
             QTreeWidget::branch:has-children:!has-siblings:closed,
             QTreeWidget::branch:closed:has-children:has-siblings {
