@@ -7,7 +7,7 @@ from PyQt5.QtGui import QColor, QFont
 
 
 class PeminjamanUI(QWidget):
-    def __init__(self, schema_path="schema.sql", parent=None):
+    def __init__(self, schema_path="src/schema.sql", parent=None):
         super().__init__(parent)
         self.schema_path = schema_path
         self.init_ui()
@@ -60,7 +60,7 @@ class PeminjamanUI(QWidget):
 
     def init_database(self):
         """Initialize the database using schema.sql."""
-        conn = sqlite3.connect('car_rental.db')
+        conn = sqlite3.connect('src/CarGoOwner.db')
         cursor = conn.cursor()
 
         # Execute the schema.sql file
@@ -77,7 +77,7 @@ class PeminjamanUI(QWidget):
 
     def load_data(self):
         """Load data from the database into the table."""
-        conn = sqlite3.connect('car_rental.db')
+        conn = sqlite3.connect('src/CarGoOwner.db')
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM Peminjaman')
         data = cursor.fetchall()

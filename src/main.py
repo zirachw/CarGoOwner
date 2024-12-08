@@ -17,7 +17,7 @@ class MenuUI(QMainWindow):
         self.setGeometry(0, 0, screen.width(), screen.height())  
         self.setMinimumSize(screen.width(), screen.height()) 
         self.setStyleSheet("background-color : #FFFFFF")
-        self.sidebar_width = int(screen.width() * 0.15)
+        self.sidebar_width = int(screen.width() * 0.2)
         
         # Main container widget
         main_widget = QWidget()
@@ -33,7 +33,7 @@ class MenuUI(QMainWindow):
         self.menu = self.MainUI()
         self.mobil = MobilUI()
         # Panggil Peminjaman UI
-        self.peminjaman = PeminjamanUI(schema_path="schema.sql")
+        self.peminjaman = PeminjamanUI(schema_path="src/schema.sql")
         # Panggil Pelanggan UI
         self.pelanggan = QWidget()
         self.jadwalpengembalian = QWidget()
