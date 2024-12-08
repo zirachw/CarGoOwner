@@ -37,7 +37,6 @@ class MenuUI(QMainWindow):
         self.peminjaman = PeminjamanUI(schema_path="src/schema.sql")
         self.pelanggan = PelangganController(schema_path="src/schema.sql")
         # Panggil Pelanggan UI
-        self.pelanggan = QWidget()
         self.jadwalpengembalian = QWidget()
         self.pembayaranrental = QWidget()
         self.historipeminjamanmobil = QWidget()

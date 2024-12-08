@@ -210,7 +210,7 @@ class PelangganController(QWidget):
             QPushButton:disabled { color: #9CA3AF; }
             QPushButton[current="true"] {
                 font-weight: bold;
-                color: #2563EB;
+                color: #000000;
             }
         """
         
