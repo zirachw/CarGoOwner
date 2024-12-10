@@ -3,8 +3,9 @@ from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt, QSize
 
 class CarCard(QWidget):
-    def __init__(self, image_path, title, color, license_plate, year, status_icon, parent=None):
+    def __init__(self, image_data, title, color, license_plate, year, status_icon, parent=None):
         super().__init__(parent)
+        self.setObjectName("CarCard")
         self.setStyleSheet("""
             QWidget#CarCard {
                 background-color: #FFFFFF;
@@ -23,7 +24,10 @@ class CarCard(QWidget):
         # Car image
         car_image = QLabel()
         try:
-            pixmap = QPixmap(image_path).scaled(200, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pixmap = QPixmap()
+            if not pixmap.loadFromData(image_data):
+                raise ValueError("Failed to load image from data")
+            pixmap = pixmap.scaled(200, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             car_image.setPixmap(pixmap)
         except Exception as e:
             print(f"Error loading image: {e}")
@@ -61,7 +65,10 @@ class CarCard(QWidget):
         status_label = QLabel()
         try:
             status_icon_path = "./src/Component/GreenCheckIcon.png" if status_icon == 1 else "./src/Component/RedCrossIcon.png"
-            status_pixmap = QPixmap(status_icon_path).scaled(QSize(24, 24), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            status_pixmap = QPixmap(status_icon_path)
+            if status_pixmap.isNull():
+                raise ValueError(f"Status icon not found: {status_icon_path}")
+            status_pixmap = status_pixmap.scaled(QSize(24, 24), Qt.KeepAspectRatio, Qt.SmoothTransformation)
             status_label.setPixmap(status_pixmap)
         except Exception as e:
             print(f"Error loading status icon: {e}")

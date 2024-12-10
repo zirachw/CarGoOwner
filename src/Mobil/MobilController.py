@@ -32,11 +32,11 @@ class MobilController:
             cursor.execute('SELECT COUNT(*) FROM Mobil')
             if cursor.fetchone()[0] == 0:
                 sample_data = [
-                    ('J 2024 OWI', None, 'ESEMKA', 'Hitam', 2019, 0),
-                    ('RI 1', None, 'NIGGA', 'Puthin', 2025, 1),
-                    ('B 1234 ABC', None, 'Toyota Avanza', 'Hitam', 2018, 1),
-                    ('B 2345 BCD', None, 'Toyota Innova', 'Putih', 2019, 1),
-                    ('D 1452 HM', None, 'Avanza 2005', 'Cream', 2005, 1),
+                    ('J 2024 OWI', self.read_image('src/Component/Mobil/arduino.jpg'), 'ESEMKA', 'Hitam', 2019, 0),
+                    ('RI 1', self.read_image('src/Component/Mobil/bater.jpg'), 'NIGGA', 'Putih', 2025, 1),
+                    ('B 1234 ABC', self.read_image('src/Component/Mobil/battery.jpeg'), 'Toyota Avanza', 'Hitam', 2018, 1),
+                    ('B 2345 BCD', self.read_image('src/Component/Mobil/Nice.jpeg'), 'Toyota Innova', 'Putih', 2019, 1),
+                    ('D 1452 HM', self.read_image('src/Component/Mobil/PP.jpg'), 'Avanza 2005', 'Cream', 2005, 1),
                     # Add more sample data as needed
                 ]
                 
@@ -109,6 +109,11 @@ class MobilController:
         finally:
             if conn:
                 conn.close()
+
+    def read_image(self, file_path):
+        """Read an image file from the given path."""
+        with open(file_path, 'rb') as file:
+            return file.read()
 
     def delete_mobil(self, nomor_plat: str):
         """Delete an existing Mobil object."""
