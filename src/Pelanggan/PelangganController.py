@@ -1,15 +1,422 @@
 import sys
 import os
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
-                           QLabel, QTableWidget, QTableWidgetItem, QHeaderView, 
-                           QFrame, QSizePolicy, QCheckBox, QToolButton, QDesktopWidget)
-from PyQt5.QtCore import Qt, QRect
-from PyQt5.QtGui import QFont, QColor, QIcon
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget,
+    QTableWidgetItem, QHeaderView, QFrame, QSizePolicy, QCheckBox, QToolButton,
+    QDesktopWidget, QDialog, QLineEdit, QMessageBox, QGraphicsBlurEffect
+)
+from PyQt5.QtCore import Qt, QRect, QRegExp
+from PyQt5.QtGui import QFont, QColor, QIcon, QRegExpValidator
 import sqlite3
 
+class AddPelangganDialog(QDialog):
+    """A dialog for adding new customers with real-time validation and user feedback."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        # Set the dialog to cover the entire screen for overlay effect
+        if parent:
+            self.setGeometry(parent.window().geometry())
+        else:
+            screen = QDesktopWidget().screenGeometry()
+            self.setGeometry(screen)
+        
+        # Configure window properties for modal overlay appearance
+        self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setModal(True)
+        
+        # Initialize validation states for all fields
+        self.validation_states = {
+            'NIK': False,
+            'Nama': False,
+            'Kontak': False,
+            'Alamat': False
+        }
+        
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Set up the user interface with all components and layouts."""
+        # Main layout setup with proper spacing
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        
+        # Create semi-transparent overlay
+        overlay = QWidget(self)
+        overlay.setStyleSheet("QWidget { background-color: rgba(0, 0, 0, 0.85); }")
+        overlay.setGeometry(self.geometry())
+        
+        # Create content container with proper sizing
+        content = QWidget(overlay)
+        content.setFixedSize(440, 630)
+        content.setStyleSheet("QWidget { background-color: white; border-radius: 12px; }")
+        
+        # Center content in overlay
+        content_x = (overlay.width() - content.width()) // 2
+        content_y = (overlay.height() - content.height()) // 2
+        content.move(content_x, content_y)
+        
+        # Set up content layout with proper spacing
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(32, 24, 32, 32)
+        content_layout.setSpacing(24)
+        
+        # Create and setup header section
+        header_layout = self.setup_header()
+        content_layout.addLayout(header_layout)
+        
+        # Create form fields
+        self.setup_form_fields(content_layout)
+        
+        # Create confirm button
+        confirm_btn = self.setup_confirm_button()
+        content_layout.addWidget(confirm_btn)
+        
+        # Add overlay to main layout
+        main_layout.addWidget(overlay)
+        
+        # Initialize button state
+        self.update_confirm_button()
+
+    def setup_header(self):
+        """Set up the header section with icon and title."""
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(12)
+        header_layout.setAlignment(Qt.AlignVCenter)
+        
+        # Create icon container
+        icon_container = QFrame()
+        icon_container.setFixedSize(40, 40)
+        icon_container.setStyleSheet("""
+            QFrame {
+                background-color: #F3F4F6;
+                border-radius: 20px;
+                margin: 0;
+                padding: 0;
+            }
+        """)
+        
+        # Create icon label
+        icon_label = QLabel(icon_container)
+        icon_label.setFixedSize(40, 40)
+        icon_label.setAlignment(Qt.AlignCenter)
+        icon_label.setText("👥")
+        icon_label.setStyleSheet("""
+            QLabel {
+                padding: 0;
+                margin: 0;
+                font-size: 20px;
+            }
+        """)
+        
+        # Create title label
+        title = QLabel("Add a Pelanggan")
+        title.setStyleSheet("""
+            QLabel {
+                color: #111827;
+                font-family: 'Poly', sans-serif;
+                font-size: 20px;
+                font-weight: bold;
+                margin: 0;
+                padding: 0;
+            }
+        """)
+        
+        # Create close button
+        close_btn = QPushButton("×")
+        close_btn.setFixedSize(24, 24)
+        close_btn.setCursor(Qt.PointingHandCursor)
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                color: #6B7280;
+                border: none;
+                font-size: 24px;
+                font-weight: bold;
+                padding: 0;
+                margin: 0;
+            }
+            QPushButton:hover {
+                color: #111827;
+            }
+        """)
+        close_btn.clicked.connect(self.reject)
+        
+        # Assemble header layout
+        header_layout.addWidget(icon_container)
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+        header_layout.addWidget(close_btn)
+        
+        return header_layout
+
+    def setup_form_fields(self, parent_layout):
+        """Set up the form fields with validation."""
+        # Define field placeholders
+        placeholders = {
+            'NIK': 'Enter 16-digit NIK number',
+            'Nama': 'Enter customer name (letters only)',
+            'Kontak': 'Enter contact number',
+            'Alamat': 'Enter address (max 30 characters)'
+        }
+        
+        # Create form fields
+        fields = ['NIK', 'Nama', 'Kontak', 'Alamat']
+        self.inputs = {}
+        self.error_labels = {}
+        
+        for field in fields:
+            # Create field container
+            field_container = QWidget()
+            field_layout = QVBoxLayout(field_container)
+            field_layout.setContentsMargins(0, 0, 0, 0)
+            field_layout.setSpacing(4)
+            
+            # Create field label
+            label = QLabel(field)
+            label.setStyleSheet("""
+                QLabel {
+                    color: #374151;
+                    font-family: 'Poly', sans-serif;
+                    font-size: 16px;
+                    font-weight: 500;
+                    margin: 0;
+                    padding: 0;
+                }
+            """)
+            field_layout.addWidget(label)
+            
+            # Create input and error container
+            input_error_container = QWidget()
+            input_error_container.setFixedHeight(70)
+            input_error_layout = QVBoxLayout(input_error_container)
+            input_error_layout.setContentsMargins(0, 0, 0, 0)
+            input_error_layout.setSpacing(2)
+            
+            # Create input field
+            input_field = QLineEdit()
+            input_field.setFixedHeight(44)
+            input_field.setPlaceholderText(placeholders[field])
+            input_field.setStyleSheet("""
+                QLineEdit {
+                    padding: 12px;
+                    border: 1px solid #E5E7EB;
+                    border-radius: 8px;
+                    background-color: white;
+                    font-family: 'Poly', sans-serif;
+                    font-size: 14px;
+                    margin: 0;
+                }
+                QLineEdit:focus {
+                    border: 1px solid #9CA3AF;
+                }
+                QLineEdit[invalid="true"] {
+                    border: 1px solid #EF4444;
+                }
+                QLineEdit::placeholder {
+                    color: #9CA3AF;
+                }
+            """)
+            
+            # Create error label
+            error_label = QLabel()
+            error_label.setFixedHeight(20)
+            error_label.setStyleSheet("""
+                QLabel {
+                    color: #EF4444;
+                    font-family: 'Poly', sans-serif;
+                    font-size: 12px;
+                    min-height: 20px;
+                    padding: 0;
+                    margin: 0;
+                }
+            """)
+            error_label.setVisible(True)
+            error_label.setWordWrap(True)
+            
+            # Add components to layouts
+            input_error_layout.addWidget(input_field)
+            input_error_layout.addWidget(error_label)
+            field_layout.addWidget(input_error_container)
+            
+            # Store references
+            self.inputs[field] = input_field
+            self.error_labels[field] = error_label
+            
+            # Set up field-specific validation
+            if field == 'NIK':
+                input_field.setValidator(QRegExpValidator(QRegExp("^[0-9]{0,16}$")))
+                input_field.textChanged.connect(lambda text, f=field: self.validate_nik(text, f))
+            elif field == 'Nama':
+                input_field.textChanged.connect(lambda text, f=field: self.validate_nama(text, f))
+            elif field == 'Kontak':
+                input_field.textChanged.connect(lambda text, f=field: self.validate_kontak(text, f))
+            else:  # Alamat
+                input_field.setMaxLength(30)
+                input_field.textChanged.connect(lambda text, f=field: self.validate_alamat(text, f))
+            
+            parent_layout.addWidget(field_container)
+
+    def setup_confirm_button(self):
+        """Create and set up the confirm button."""
+        confirm_btn = QPushButton("Confirm")
+        confirm_btn.setFixedSize(376, 44)
+        confirm_btn.setCursor(Qt.PointingHandCursor)
+        confirm_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4B5563;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-family: 'Poly', sans-serif;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #374151;
+            }
+            QPushButton:disabled {
+                background-color: #9CA3AF;
+                cursor: not-allowed;
+            }
+        """)
+        confirm_btn.clicked.connect(self.validate_and_accept)
+        self.confirm_button = confirm_btn
+        return confirm_btn
+
+    def validate_nik(self, text, field):
+        """Validate NIK input to ensure it's exactly 16 digits."""
+        is_valid = len(text) == 16 and text.isdigit()
+        self.validation_states[field] = is_valid
+        message = "NIK must be exactly 16 digits" if text and not is_valid else ""
+        self.show_validation_message(field, message)
+        self.update_confirm_button()
+
+    def validate_nama(self, text, field):
+        """Validate Nama input to ensure it contains only letters and spaces."""
+        is_valid = bool(text) and all(c.isalpha() or c.isspace() for c in text)
+        self.validation_states[field] = is_valid
+        message = "Name must contain only letters" if text and not is_valid else ""
+        self.show_validation_message(field, message)
+        self.update_confirm_button()
+
+    def validate_kontak(self, text, field):
+        """Validate Kontak input to ensure it contains only numbers."""
+        is_valid = bool(text) and text.isdigit()
+        self.validation_states[field] = is_valid
+        message = "Contact must contain only numbers" if text and not is_valid else ""
+        self.show_validation_message(field, message)
+        self.update_confirm_button()
+
+    def validate_alamat(self, text, field):
+        """Validate Alamat input to ensure it's not empty and within length limit."""
+        is_valid = bool(text) and len(text) <= 30
+        self.validation_states[field] = is_valid
+        message = "Address must not be empty and max 30 characters" if text and not is_valid else ""
+        self.show_validation_message(field, message)
+        self.update_confirm_button()
+
+    def show_validation_message(self, field, message):
+        """Display validation message while maintaining layout stability."""
+        error_label = self.error_labels[field]
+        input_field = self.inputs[field]
+        
+        if message:
+            error_label.setText(message)
+            error_label.setStyleSheet("""
+                QLabel {
+                    color: #EF4444;
+                    font-family: 'Poly', sans-serif;
+                    font-size: 12px;
+                    min-height: 20px;
+                    padding: 0;
+                    margin: 0;
+                }
+            """)
+            input_field.setProperty("invalid", True)
+        else:
+            error_label.setText("")
+            error_label.setStyleSheet("""
+                QLabel {
+                    color: transparent;
+                    font-family: 'Poly', sans-serif;
+                    font-size: 12px;
+                    min-height: 20px;
+                    padding: 0;
+                    margin: 0;
+                }
+            """)
+            input_field.setProperty("invalid", False)
+        
+        # Force style update
+        input_field.style().unpolish(input_field)
+        input_field.style().polish(input_field)
+
+    def update_confirm_button(self):
+        """Update confirm button state based on overall form validity."""
+        is_valid = all(self.validation_states.values())
+        self.confirm_button.setEnabled(is_valid)
+
+    def validate_and_accept(self):
+        """Perform final validation and accept dialog if valid."""
+        if all(self.validation_states.values()):
+            self.accept()
+
+    def get_data(self):
+        """Retrieve the form data as a dictionary."""
+        return {field: input_field.text() for field, input_field in self.inputs.items()}
+
+class EditPelangganDialog(AddPelangganDialog):
+    """A dialog for editing existing customer data."""
+    def __init__(self, customer_data, parent=None):
+        super().__init__(parent)
+        self.customer_data = customer_data
+        self.original_nik = customer_data['NIK']
+        self.setup_edit_mode()
+
+    def setup_edit_mode(self):
+        """Modify the dialog for edit mode and populate fields with existing data."""
+        # Update dialog title
+        title_label = self.findChild(QLabel, "")
+        for child in self.findChildren(QLabel):
+            if child.text() == "Add a Pelanggan":
+                title_label = child
+                break
+        if title_label:
+            title_label.setText("Edit Pelanggan")
+
+        # Update confirm button text
+        if self.confirm_button:
+            self.confirm_button.setText("Save Changes")
+
+        # Populate fields with existing data
+        field_mapping = {
+            'NIK': self.customer_data['NIK'],
+            'Nama': self.customer_data['Nama'],
+            'Kontak': self.customer_data['Kontak'],
+            'Alamat': self.customer_data['Alamat']
+        }
+
+        # Set existing values and validate
+        for field, value in field_mapping.items():
+            if field in self.inputs:
+                self.inputs[field].setText(str(value))
+                
+                # Trigger validation for each field
+                if field == 'NIK':
+                    self.validate_nik(str(value), field)
+                elif field == 'Nama':
+                    self.validate_nama(str(value), field)
+                elif field == 'Kontak':
+                    self.validate_kontak(str(value), field)
+                elif field == 'Alamat':
+                    self.validate_alamat(str(value), field)
+
 class PelangganController(QWidget):
+    """Main controller for managing customer data with comprehensive CRUD operations."""
     def __init__(self, schema_path, parent=None):
-        """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
         
         # Initialize screen dimensions and layout calculations
@@ -23,59 +430,42 @@ class PelangganController(QWidget):
         # Initialize pagination variables
         self.current_page = 1
         self.items_per_page = 10
-        self.pagination_buttons = []  # Store pagination buttons
+        self.pagination_buttons = []
         
-        # Initialize navigation button references
-        self.first_button = None
-        self.prev_button = None
-        self.next_button = None
-        self.last_button = None
-        
-        # Initialize database before setting up UI
+        # Initialize database and UI
         self.init_database()
-        
-        # Create main layout with proper spacing
         self.setup_main_layout()
-        
-        # Load the initial data
         self.load_data()
 
     def setup_window_geometry(self):
-        """Set up the window geometry based on screen dimensions."""
-        # Get screen dimensions
+        """Configure window dimensions based on screen size."""
         screen = QDesktopWidget().screenGeometry()
         self.setGeometry(0, 0, screen.width(), screen.height())
-        
-        # Calculate available width (total width minus 25% for sidebar)
-        self.available_width = screen.width() - (screen.width() * 0.25) 
-        
-        # Store dimensions for later use
+        self.available_width = screen.width() - (screen.width() * 0.25)
         self.screen_width = screen.width()
         self.screen_height = screen.height()
 
     def setup_main_layout(self):
-        """Set up the main layout with proper spacing and margins."""
+        """Initialize the main layout structure."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
         
-        # Initialize and setup the table
         self.setup_table()
         layout.addWidget(self.table)
         
-        # Setup bottom controls (pagination, buttons)
         bottom_layout = self.setup_bottom_controls()
         layout.addLayout(bottom_layout)
 
     def setup_table(self):
-        """Set up the table with calculated column widths based on screen size."""
+        """Configure the data table with proper styling and column setup."""
         self.table = QTableWidget()
         self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels([
             "", "NIK", "Nama", "Kontak", "Alamat", "Credit Point", "Status", "Aksi"
         ])
         
-        # Define column percentages (total should be 100)
+        # Define and apply column widths
         column_percentages = {
             0: 5,     # Checkbox
             1: 15,    # NIK
@@ -87,12 +477,11 @@ class PelangganController(QWidget):
             7: 6      # Aksi
         }
         
-        # Calculate and set column widths based on available width
         for col, percentage in column_percentages.items():
             width = int(self.available_width * (percentage / 100))
             self.table.setColumnWidth(col, width)
         
-        # Apply comprehensive table styling
+        # Apply styling to the table
         self.table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -117,13 +506,12 @@ class PelangganController(QWidget):
             }
         """)
         
-        # Configure additional table properties
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
 
     def setup_bottom_controls(self):
-        """Set up the bottom controls with proper spacing and alignment."""
+        """Set up the bottom control panel with pagination and action buttons."""
         bottom_layout = QHBoxLayout()
         
         # Create Select/Deselect All button
@@ -144,10 +532,10 @@ class PelangganController(QWidget):
         """)
         select_all_btn.clicked.connect(self.toggle_select_all)
         
-        # Set up pagination
+        # Set up pagination controls
         pagination_container = self.setup_pagination()
         
-        # Create action buttons
+        # Create action buttons (Add and Delete)
         add_button = QPushButton("+")
         delete_button = QPushButton("×")
         
@@ -165,7 +553,8 @@ class PelangganController(QWidget):
                 }}
             """)
         
-        # Connect delete button to handler
+        # Connect button actions
+        add_button.clicked.connect(self.handle_add_pelanggan)
         delete_button.clicked.connect(self.handle_delete_selected)
         
         # Assemble the bottom layout
@@ -179,302 +568,138 @@ class PelangganController(QWidget):
         
         return bottom_layout
 
-    def setup_pagination(self):
-        """Set up pagination with a fixed window of 5 pages plus First/Last buttons."""
-        # Create container widget
-        pagination_container = QWidget()
-        pagination_layout = QHBoxLayout(pagination_container)
-        pagination_layout.setContentsMargins(0, 0, 0, 0)
-        pagination_layout.setSpacing(8)
-        
-        # Calculate total pages
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM Pelanggan')
-        total_records = cursor.fetchone()[0]
-        self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
-        conn.close()
-        
-        # Style for all pagination buttons
-        button_style = """
-            QPushButton {
-                background: none;
-                border: none;
-                color: #374151;
-                font-family: 'Poly', sans-serif;
-                font-size: 14px;
-                padding: 8px;
-                min-width: 30px;
-            }
-            QPushButton:hover { color: #000000; }
-            QPushButton:disabled { color: #9CA3AF; }
-            QPushButton[current="true"] {
-                font-weight: bold;
-                color: #000000;
-            }
-        """
-        
-        # Clear existing buttons
-        self.pagination_buttons = []
-        
-        # Create navigation buttons
-        self.first_button = QPushButton("First")
-        self.prev_button = QPushButton("←")
-        self.next_button = QPushButton("→")
-        self.last_button = QPushButton("Last")
-        
-        for btn in [self.first_button, self.prev_button, self.next_button, self.last_button]:
-            btn.setStyleSheet(button_style)
-        
-        # Add First and Prev buttons
-        pagination_layout.addWidget(self.first_button)
-        pagination_layout.addWidget(self.prev_button)
-        
-        # Calculate the range of pages to display (sliding window of 5)
-        def calculate_page_range():
-            n = 5  # Number of page buttons to show
-            if self.total_pages <= n:
-                # If total pages is less than window size, show all pages
-                start_page = 1
-                end_page = self.total_pages
-            else:
-                # Calculate the start page based on current page
-                start_page = max(1, min(self.current_page - n//2, self.total_pages - n + 1))
-                end_page = start_page + n - 1
+    def handle_add_pelanggan(self):
+        """Handle the addition of a new customer."""
+        dialog = AddPelangganDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            data = dialog.get_data()
+            
+            if not all(data.values()):
+                QMessageBox.warning(self, "Validation Error", "All fields are required!")
+                return
+            
+            try:
+                conn = sqlite3.connect(self.db_path)
+                cursor = conn.cursor()
                 
-                # Adjust if we're near the end
-                if end_page > self.total_pages:
-                    end_page = self.total_pages
-                    start_page = max(1, end_page - n + 1)
-            
-            return range(start_page, end_page + 1)
-        
-        # Add page buttons
-        for page in calculate_page_range():
-            btn = QPushButton(str(page))
-            btn.setStyleSheet(button_style)
-            if page == self.current_page:
-                btn.setProperty("current", "true")
-                btn.style().unpolish(btn)
-                btn.style().polish(btn)
-            btn.setProperty("page_number", page)
-            btn.clicked.connect(lambda checked, p=page: self.go_to_page(p))
-            self.pagination_buttons.append(btn)
-            pagination_layout.addWidget(btn)
-        
-        # Add Next and Last buttons
-        pagination_layout.addWidget(self.next_button)
-        pagination_layout.addWidget(self.last_button)
-        
-        # Connect navigation button signals
-        self.first_button.clicked.connect(lambda: self.go_to_page(1))
-        self.prev_button.clicked.connect(self.previous_page)
-        self.next_button.clicked.connect(self.next_page)
-        self.last_button.clicked.connect(lambda: self.go_to_page(self.total_pages))
-        
-        # Update button states
-        self.update_pagination_buttons()
-        
-        return pagination_container
-
-    def update_pagination_buttons(self):
-        """Update the enabled state of all pagination buttons."""
-        if all([self.first_button, self.prev_button, self.next_button, self.last_button]):
-            # Disable First/Prev buttons if on first page
-            self.first_button.setEnabled(self.current_page > 1)
-            self.prev_button.setEnabled(self.current_page > 1)
-            
-            # Disable Next/Last buttons if on last page
-            self.next_button.setEnabled(self.current_page < self.total_pages)
-            self.last_button.setEnabled(self.current_page < self.total_pages)
-
-    def go_to_page(self, page):
-        """Navigate to a specific page number."""
-        if 1 <= page <= self.total_pages and page != self.current_page:
-            self.current_page = page
-            self.load_data()
-            # Recreate pagination with updated current page
-            bottom_layout = self.findChild(QHBoxLayout)
-            if bottom_layout:
-                # Find and remove the old pagination container
-                for i in range(bottom_layout.count()):
-                    item = bottom_layout.itemAt(i)
-                    if item and isinstance(item.widget(), QWidget):
-                        if isinstance(item.widget().layout(), QHBoxLayout):
-                            item.widget().deleteLater()
-                            break
-                
-                # Create and add new pagination container
-                new_pagination = self.setup_pagination()
-                # Add it at the same position (index 2)
-                bottom_layout.insertWidget(2, new_pagination)
-
-    def previous_page(self):
-        """Navigate to the previous page."""
-        if self.current_page > 1:
-            self.go_to_page(self.current_page - 1)
-
-    def next_page(self):
-        """Navigate to the next page."""
-        if self.current_page < self.total_pages:
-            self.go_to_page(self.current_page + 1)
-
-    def init_database(self):
-        """Initialize the database and create tables with sample customer data."""
-        try:
-            # Establish database connection
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Create the Pelanggan table with proper column order
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Pelanggan (
-                    NIK TEXT PRIMARY KEY,
-                    Nama TEXT,
-                    Kontak TEXT,
-                    Alamat TEXT,
-                    CreditPoint INTEGER,
-                    StatusPinjam BOOLEAN
-                )
-            ''')
-            
-            # Check if table is empty and needs sample data
-            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
-            if cursor.fetchone()[0] == 0:
-                # Prepare sample data with 60 varied entries
-                sample_data = [
-                    ('3602041211870001', 'Fariz Rifqi', '08554677321', 'Puri Indah', 100, 1),
-                    ('3602041211870002', 'Razi Rachman', '08126016657', 'Pondok Furqon Sekeloa', 100, 0),
-                    ('3602041211870003', 'Ahmad Dharma', '08139876543', 'Jl. Sukajadi No. 45', 75, 1),
-                    ('3602041211870004', 'Siti Nurhaliza', '08567890123', 'Komplek Permata Blok A2', 90, 0),
-                    ('3602041211870005', 'Budi Santoso', '08234567890', 'Jl. Dipatiukur No. 23', 100, 1),
-                    ('3602041211870006', 'Diana Putri', '08198765432', 'Apartemen Sudirman Lt. 5', 85, 0),
-                    ('3602041211870007', 'Eko Prasetyo', '08521234567', 'Jl. Buah Batu No. 78', 95, 1),
-                    ('3602041211870008', 'Fitri Handayani', '08234567891', 'Komplek Cijagra Indah B5', 80, 0),
-                    ('3602041211870009', 'Gunawan Wibowo', '08187654321', 'Jl. Dago No. 145', 100, 1),
-                    ('3602041211870010', 'Hana Safira', '08561234567', 'Perumahan Antapani Blok F7', 70, 0),
-                    ('3602041211870011', 'Irfan Hakim', '08129876543', 'Jl. Setiabudi No. 67', 90, 1),
-                    ('3602041211870012', 'Julia Perez', '08234567892', 'Apartemen Gateway Lt. 12', 100, 0),
-                    ('3602041211870013', 'Kevin Sanjaya', '08198765433', 'Jl. Ir. H. Juanda No. 34', 85, 1),
-                    ('3602041211870014', 'Linda Maharani', '08561234568', 'Komplek Ciumbuleuit B23', 95, 0),
-                    ('3602041211870015', 'Muhammad Rizky', '08234567893', 'Jl. Tubagus Ismail No. 56', 75, 1),
-                    ('3602041211870016', 'Nadia Safitri', '08187654322', 'Perumahan Bumi Asri C12', 100, 0),
-                    ('3602041211870017', 'Oscar Prawira', '08521234568', 'Jl. Pasir Kaliki No. 89', 90, 1),
-                    ('3602041211870018', 'Putri Rahayu', '08234567894', 'Komplek Metro Indah D4', 80, 0),
-                    ('3602041211870019', 'Qori Sandika', '08198765434', 'Jl. Cihampelas No. 234', 100, 1),
-                    ('3602041211870020', 'Rachel Amalia', '08561234569', 'Apartemen Jardin Lt. 8', 85, 0),
-                    ('3602041211870021', 'Surya Darma', '08234567895', 'Jl. Lengkong No. 45', 95, 1),
-                    ('3602041211870022', 'Tania Putri', '08187654323', 'Komplek Kopo Permai E15', 70, 0),
-                    ('3602041211870023', 'Umar Hidayat', '08521234569', 'Jl. Gatot Subroto No. 78', 100, 1),
-                    ('3602041211870024', 'Vina Muliani', '08234567896', 'Perumahan Cijerah Blok F9', 90, 0),
-                    ('3602041211870025', 'Wawan Setiawan', '08198765435', 'Jl. Soekarno Hatta No. 123', 85, 1),
-                    ('3602041211870026', 'Xena Putri', '08561234570', 'Komplek Margahayu A7', 95, 0),
-                    ('3602041211870027', 'Yudi Pratama', '08234567897', 'Jl. Asia Afrika No. 56', 75, 1),
-                    ('3602041211870028', 'Zahra Amira', '08187654324', 'Apartemen Sky Garden Lt. 15', 100, 0),
-                    ('3602041211870029', 'Adi Nugroho', '08521234570', 'Jl. Merdeka No. 89', 90, 1),
-                    ('3602041211870030', 'Bella Safitri', '08234567898', 'Komplek Batununggal C8', 80, 0),
-                    ('3602041211870031', 'Candra Wijaya', '08198765436', 'Jl. Riau No. 167', 100, 1),
-                    ('3602041211870032', 'Dina Maulida', '08561234571', 'Perumahan Ujung Berung D12', 85, 0),
-                    ('3602041211870033', 'Egi Pratama', '08234567899', 'Jl. Pahlawan No. 45', 95, 1),
-                    ('3602041211870034', 'Fanny Oktavia', '08187654325', 'Komplek Antapani Indah B6', 70, 0),
-                    ('3602041211870035', 'Galih Dermawan', '08521234571', 'Jl. Dipati Ukur No. 234', 100, 1),
-                    ('3602041211870036', 'Hesti Putri', '08234567900', 'Apartemen Green Palace Lt. 10', 90, 0),
-                    ('3602041211870037', 'Indra Lesmana', '08198765437', 'Jl. Braga No. 78', 85, 1),
-                    ('3602041211870038', 'Jasmine Ayu', '08561234572', 'Komplek Sarijadi C15', 95, 0),
-                    ('3602041211870039', 'Kiki Firmansyah', '08234567901', 'Jl. Pasteur No. 56', 75, 1),
-                    ('3602041211870040', 'Laras Wati', '08187654326', 'Perumahan Cibiru Blok E7', 100, 0),
-                    ('3602041211870041', 'Maman Abdurahman', '08521234572', 'Jl. Surya Sumantri No. 89', 90, 1),
-                    ('3602041211870042', 'Nining Septiani', '08234567902', 'Komplek Geger Kalong D4', 80, 0),
-                    ('3602041211870043', 'Opik Taupik', '08198765438', 'Jl. Siliwangi No. 123', 100, 1),
-                    ('3602041211870044', 'Putri Candrawati', '08561234573', 'Apartemen Metro Lt. 7', 85, 0),
-                    ('3602041211870045', 'Rizal Fahmi', '08234567903', 'Jl. Terusan Jakarta No. 45', 95, 1),
-                    ('3602041211870046', 'Siska Dewi', '08187654327', 'Komplek Cicaheum B8', 70, 0),
-                    ('3602041211870047', 'Taufik Hidayat', '08521234573', 'Jl. Ahmad Yani No. 78', 100, 1),
-                    ('3602041211870048', 'Ulfah Rahmawati', '08234567904', 'Perumahan Ciwastra C12', 90, 0),
-                    ('3602041211870049', 'Vicky Prasetyo', '08198765439', 'Jl. Veteran No. 167', 85, 1),
-                    ('3602041211870050', 'Winda Kartika', '08561234574', 'Komplek Cijerah Indah A7', 95, 0),
-                    ('3602041211870051', 'Yanto Sudrajat', '08234567905', 'Jl. Sunda No. 56', 75, 1),
-                    ('3602041211870052', 'Zaskia Gotik', '08187654328', 'Apartemen City View Lt. 9', 100, 0),
-                    ('3602041211870053', 'Asep Sunandar', '08521234574', 'Jl. Astana Anyar No. 89', 90, 1),
-                    ('3602041211870054', 'Bunga Citra', '08234567906', 'Komplek Margacinta E15', 80, 0),
-                    ('3602041211870055', 'Cecep Reza', '08198765440', 'Jl. Pajajaran No. 234', 100, 1),
-                    ('3602041211870056', 'Desi Ratnasari', '08561234575', 'Perumahan Arcamanik D12', 85, 0),
-                    ('3602041211870057', 'Eman Sulaeman', '08234567907', 'Jl. Pasirkoja No. 45', 95, 1),
-                    ('3602041211870058', 'Fitriani Zahra', '08187654329', 'Komplek Soekarno Hatta B6', 70, 0),
-                    ('3602041211870059', 'Gilang Dirga', '08521234575', 'Jl. Kiaracondong No. 78', 100, 1),
-                    ('3602041211870060', 'Hani Soraya', '08234567908', 'Apartemen Park View Lt. 11', 90, 0),
-                ]
-                
-                # Insert all sample data
-                cursor.executemany('''
+                cursor.execute('''
                     INSERT INTO Pelanggan (NIK, Nama, Kontak, Alamat, CreditPoint, StatusPinjam)
                     VALUES (?, ?, ?, ?, ?, ?)
-                ''', sample_data)
+                ''', (
+                    data['NIK'],
+                    data['Nama'],
+                    data['Kontak'],
+                    data['Alamat'],
+                    100,  # Default credit point
+                    0     # Default status (not borrowing)
+                ))
                 
-            # Commit changes and ensure they're saved
-            conn.commit()
-            
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            
-        finally:
-            # Ensure connection is closed even if an error occurs
-            if conn:
-                conn.close()
+                conn.commit()
+                self.load_data()
+                QMessageBox.information(self, "Success", "Customer added successfully!")
+                
+            except sqlite3.IntegrityError:
+                QMessageBox.warning(self, "Error", "NIK already exists!")
+            except sqlite3.Error as e:
+                QMessageBox.critical(self, "Database Error", f"An error occurred: {str(e)}")
+            finally:
+                if conn:
+                    conn.close()
 
-    def load_data(self):
-        """Load and display data from the database with pagination."""
+    def handle_edit(self, row):
+        """Handle editing of an existing customer."""
+        try:
+            # Get current customer data
+            customer_data = {
+                'NIK': self.table.item(row, 1).text(),
+                'Nama': self.table.item(row, 2).text(),
+                'Kontak': self.table.item(row, 3).text(),
+                'Alamat': self.table.item(row, 4).text(),
+                'CreditPoint': self.table.item(row, 5).text(),
+                'StatusPinjam': 1 if "Pinjam" in self.table.cellWidget(row, 6).findChild(QPushButton).text() else 0
+            }
+
+            # Create and show edit dialog
+            dialog = EditPelangganDialog(customer_data, self)
+            if dialog.exec_() == QDialog.Accepted:
+                updated_data = dialog.get_data()
+                
+                if not all(updated_data.values()):
+                    QMessageBox.warning(self, "Validation Error", "All fields are required!")
+                    return
+
+                try:
+                    conn = sqlite3.connect(self.db_path)
+                    cursor = conn.cursor()
+                    
+                    cursor.execute('''
+                        UPDATE Pelanggan 
+                        SET NIK = ?, Nama = ?, Kontak = ?, Alamat = ?
+                        WHERE NIK = ?
+                    ''', (
+                        updated_data['NIK'],
+                        updated_data['Nama'],
+                        updated_data['Kontak'],
+                        updated_data['Alamat'],
+                        customer_data['NIK']  # Original NIK for identification
+                    ))
+                    
+                    conn.commit()
+                    self.load_data()
+                    QMessageBox.information(self, "Success", "Customer data updated successfully!")
+                    
+                except sqlite3.IntegrityError:
+                    QMessageBox.warning(self, "Error", "NIK already exists!")
+                except sqlite3.Error as e:
+                    QMessageBox.critical(self, "Database Error", f"An error occurred: {str(e)}")
+                finally:
+                    if conn:
+                        conn.close()
+        
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred while editing: {str(e)}")
+
+    def handle_delete_selected(self):
+        """Handle deletion of selected customers."""
+        selected_rows = self.get_selected_rows()
+        if not selected_rows:
+            return
+
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # Calculate offset based on current page
-            offset = (self.current_page - 1) * self.items_per_page
-            cursor.execute(f'''
-                SELECT * FROM Pelanggan 
-                LIMIT {self.items_per_page} 
-                OFFSET {offset}
-            ''')
-            data = cursor.fetchall()
+            for row in selected_rows:
+                nik_item = self.table.item(row, 1)
+                if nik_item:
+                    nik = nik_item.text()
+                    cursor.execute('DELETE FROM Pelanggan WHERE NIK = ?', (nik,))
             
-            # Set up table rows
-            self.table.setRowCount(len(data))
-            for row, record in enumerate(data):
-                # Add checkbox
-                checkbox = QCheckBox()
-                checkbox_container = QWidget()
-                checkbox_layout = QHBoxLayout(checkbox_container)
-                checkbox_layout.setContentsMargins(16, 16, 16, 16)
-                checkbox_layout.addWidget(checkbox, alignment=Qt.AlignCenter)
-                self.table.setCellWidget(row, 0, checkbox_container)
-                
-                # Add data cells
-                for col, value in enumerate(record):
-                    if col == 5:  # Status column
-                        self.create_status_cell(row, col + 1, value == 1)
-                    else:
-                        item = QTableWidgetItem(str(value))
-                        item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-                        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                        self.table.setItem(row, col + 1, item)
-                
-                # Add action button
-                self.create_action_cell(row)
-                
-                # Set row height
-                self.table.setRowHeight(row, 72)
+            conn.commit()
+            
+            # Update pagination
+            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
+            total_records = cursor.fetchone()[0]
+            new_total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
+            
+            if self.current_page > new_total_pages:
+                self.current_page = max(1, new_total_pages)
+            
+            self.load_data()
+            QMessageBox.information(self, "Success", "Selected customers deleted successfully!")
             
         except sqlite3.Error as e:
-            print(f"Error loading data: {e}")
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {str(e)}")
             
         finally:
             if conn:
                 conn.close()
 
     def create_status_cell(self, row, col, is_pinjam):
-        """Create a styled status cell indicating whether a customer has borrowed items."""
+        """Create a status cell with appropriate styling."""
         status_text = "Pinjam" if is_pinjam else "Tidak Pinjam"
         status_btn = QPushButton(status_text)
+        
         status_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {'#D1FAE5' if is_pinjam else '#FEE2E2'};
@@ -499,7 +724,7 @@ class PelangganController(QWidget):
         self.table.setCellWidget(row, col, container)
 
     def create_action_cell(self, row):
-        """Create a styled action cell with an edit button for each customer row."""
+        """Create an action cell with edit functionality."""
         action_btn = QPushButton("✎")
         action_btn.setStyleSheet("""
             QPushButton {
@@ -519,41 +744,197 @@ class PelangganController(QWidget):
         layout.addWidget(action_btn, alignment=Qt.AlignCenter)
         self.table.setCellWidget(row, 7, container)
         
-        # Connect the button to edit handler
         action_btn.clicked.connect(lambda: self.handle_edit(row))
 
-    def handle_edit(self, row):
-        """Handle the edit action when a customer's edit button is clicked."""
-        # Get the NIK of the selected customer
-        nik_item = self.table.item(row, 1)
-        if nik_item:
-            nik = nik_item.text()
-            print(f"Editing customer with NIK: {nik}")
-            # TODO: Implement edit dialog functionality
-
-    def toggle_select_all(self, checked=None):
-        """Toggle selection state of all checkboxes in the table."""
-        # If checked is None, determine state based on first checkbox
-        if checked is None:
-            first_checkbox = self.get_checkbox(0)
-            if first_checkbox:
-                checked = not first_checkbox.isChecked()
+    def setup_pagination(self):
+        """
+        Set up pagination controls for navigating through customer data.
+        Creates a container with navigation buttons and page numbers.
+        """
+        pagination_container = QWidget()
+        pagination_layout = QHBoxLayout(pagination_container)
+        pagination_layout.setContentsMargins(0, 0, 0, 0)
+        pagination_layout.setSpacing(8)
         
-        # Update all checkboxes
-        for row in range(self.table.rowCount()):
-            checkbox = self.get_checkbox(row)
-            if checkbox:
-                checkbox.setChecked(checked)
+        # Calculate total pages based on database records
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM Pelanggan')
+        total_records = cursor.fetchone()[0]
+        self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
+        conn.close()
+        
+        # Define consistent button styling
+        button_style = """
+            QPushButton {
+                background: none;
+                border: none;
+                color: #374151;
+                font-family: 'Poly', sans-serif;
+                font-size: 14px;
+                padding: 8px;
+                min-width: 30px;
+            }
+            QPushButton:hover { color: #000000; }
+            QPushButton:disabled { color: #9CA3AF; }
+            QPushButton[current="true"] {
+                font-weight: bold;
+                color: #000000;
+            }
+        """
+        
+        # Create and configure navigation buttons
+        self.first_button = QPushButton("First")
+        self.prev_button = QPushButton("←")
+        self.next_button = QPushButton("→")
+        self.last_button = QPushButton("Last")
+        
+        # Apply styling to navigation buttons
+        for btn in [self.first_button, self.prev_button, self.next_button, self.last_button]:
+            btn.setStyleSheet(button_style)
+        
+        # Add navigation buttons and connect their signals
+        pagination_layout.addWidget(self.first_button)
+        self.first_button.clicked.connect(lambda: self.go_to_page(1))
+        
+        pagination_layout.addWidget(self.prev_button)
+        self.prev_button.clicked.connect(self.previous_page)
+        
+        # Create numbered page buttons
+        for page in range(1, min(6, self.total_pages + 1)):
+            btn = QPushButton(str(page))
+            btn.setStyleSheet(button_style)
+            if page == self.current_page:
+                btn.setProperty("current", "true")
+                btn.style().unpolish(btn)
+                btn.style().polish(btn)
+            btn.clicked.connect(lambda x, p=page: self.go_to_page(p))
+            self.pagination_buttons.append(btn)
+            pagination_layout.addWidget(btn)
+        
+        pagination_layout.addWidget(self.next_button)
+        self.next_button.clicked.connect(self.next_page)
+        
+        pagination_layout.addWidget(self.last_button)
+        self.last_button.clicked.connect(lambda: self.go_to_page(self.total_pages))
+        
+        # Initialize pagination button states
+        self.update_pagination_buttons()
+        return pagination_container
+
+    def update_pagination_buttons(self):
+        """
+        Update the enabled/disabled state of pagination buttons based on current page.
+        This ensures proper navigation limits and visual feedback.
+        """
+        self.first_button.setEnabled(self.current_page > 1)
+        self.prev_button.setEnabled(self.current_page > 1)
+        self.next_button.setEnabled(self.current_page < self.total_pages)
+        self.last_button.setEnabled(self.current_page < self.total_pages)
+
+        # Update page number buttons to reflect current state
+        for btn in self.pagination_buttons:
+            page_num = int(btn.text())
+            btn.setProperty("current", page_num == self.current_page)
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
+
+    def go_to_page(self, page):
+        """
+        Navigate to a specific page number.
+        
+        Args:
+            page: The target page number to display
+        """
+        if 1 <= page <= self.total_pages and page != self.current_page:
+            self.current_page = page
+            self.load_data()
+            self.update_pagination_buttons()
+
+    def previous_page(self):
+        """Navigate to the previous page if available."""
+        if self.current_page > 1:
+            self.go_to_page(self.current_page - 1)
+
+    def next_page(self):
+        """Navigate to the next page if available."""
+        if self.current_page < self.total_pages:
+            self.go_to_page(self.current_page + 1)
+
+    def init_database(self):
+        """
+        Initialize the database with required tables and sample data.
+        This ensures the application has a proper data structure and initial content.
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Create the Pelanggan table with proper schema
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS Pelanggan (
+                    NIK TEXT PRIMARY KEY,
+                    Nama TEXT,
+                    Kontak TEXT,
+                    Alamat TEXT,
+                    CreditPoint INTEGER,
+                    StatusPinjam BOOLEAN
+                )
+            ''')
+            
+            # Check if table needs sample data
+            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
+            if cursor.fetchone()[0] == 0:
+                # Insert sample customer data
+                sample_data = [
+                    ('3602041211870001', 'Fariz Rifqi', '08554677321', 'Puri Indah', 100, 1),
+                    ('3602041211870002', 'Razi Rachman', '08126016657', 'Pondok Furqon Sekeloa', 100, 0),
+                    ('3602041211870003', 'Ahmad Dharma', '08139876543', 'Jl. Sukajadi No. 45', 75, 1),
+                    ('3602041211870004', 'Siti Nurhaliza', '08567890123', 'Komplek Permata Blok A2', 90, 0),
+                    ('3602041211870005', 'Budi Santoso', '08234567890', 'Jl. Dipatiukur No. 23', 100, 1),
+                    ('3602041211870006', 'Diana Putri', '08198765432', 'Apartemen Sudirman Lt. 5', 85, 0),
+                    ('3602041211870007', 'Eko Prasetyo', '08521234567', 'Jl. Buah Batu No. 78', 95, 1),
+                    ('3602041211870008', 'Fitri Handayani', '08234567891', 'Komplek Cijagra Indah B5', 80, 0),
+                    ('3602041211870010', 'Hana Safira', '08561234567', 'Perumahan Antapani Blok F7', 70, 0),
+                    ('3602041211870011', 'Irfan Hakim', '08129876543', 'Jl. Setiabudi No. 67', 90, 1)
+                ]
+                
+                cursor.executemany('''
+                    INSERT INTO Pelanggan (NIK, Nama, Kontak, Alamat, CreditPoint, StatusPinjam)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', sample_data)
+                
+            conn.commit()
+            
+        except sqlite3.Error as e:
+            print(f"Database initialization error: {e}")
+            
+        finally:
+            if conn:
+                conn.close()
 
     def get_checkbox(self, row):
-        """Helper method to get checkbox widget from a specific row."""
+        """
+        Retrieve the checkbox widget from a specific table row.
+        
+        Args:
+            row: The row index to get the checkbox from
+            
+        Returns:
+            QCheckBox: The checkbox widget if found, None otherwise
+        """
         checkbox_container = self.table.cellWidget(row, 0)
         if checkbox_container:
             return checkbox_container.layout().itemAt(0).widget()
         return None
 
     def get_selected_rows(self):
-        """Get a list of indices for all selected rows."""
+        """
+        Get a list of all currently selected row indices.
+        
+        Returns:
+            list: Indices of selected rows
+        """
         selected_rows = []
         for row in range(self.table.rowCount()):
             checkbox = self.get_checkbox(row)
@@ -561,53 +942,70 @@ class PelangganController(QWidget):
                 selected_rows.append(row)
         return selected_rows
 
-    def handle_delete_selected(self):
-        """Delete all selected customers from the database."""
-        selected_rows = self.get_selected_rows()
-        if not selected_rows:
-            return
+    def toggle_select_all(self):
+        """
+        Toggle the selection state of all checkboxes in the table.
+        Uses the first checkbox's state to determine the new state for all checkboxes.
+        """
+        first_checkbox = self.get_checkbox(0)
+        if first_checkbox:
+            new_state = not first_checkbox.isChecked()
+            for row in range(self.table.rowCount()):
+                checkbox = self.get_checkbox(row)
+                if checkbox:
+                    checkbox.setChecked(new_state)
 
+    def load_data(self):
+        """
+        Load and display paginated customer data from the database.
+        Handles data fetching, formatting, and presentation in the table.
+        """
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            for row in selected_rows:
-                nik_item = self.table.item(row, 1)
-                if nik_item:
-                    nik = nik_item.text()
-                    cursor.execute('DELETE FROM Pelanggan WHERE NIK = ?', (nik,))
+            # Calculate offset for pagination
+            offset = (self.current_page - 1) * self.items_per_page
             
-            conn.commit()
+            # Fetch paginated data
+            cursor.execute('''
+                SELECT * FROM Pelanggan 
+                LIMIT ? OFFSET ?
+            ''', (self.items_per_page, offset))
             
-            # Recalculate total pages and adjust current page if needed
-            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
-            total_records = cursor.fetchone()[0]
-            new_total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
+            data = cursor.fetchall()
             
-            # Adjust current page if it's now beyond the total pages
-            if self.current_page > new_total_pages:
-                self.current_page = max(1, new_total_pages)
+            # Configure table for new data
+            self.table.setRowCount(len(data))
             
-            # Reload data and update pagination
-            self.load_data()
-            
-            # Recreate pagination controls
-            bottom_layout = self.findChild(QHBoxLayout)
-            if bottom_layout:
-                # Find and remove old pagination container
-                for i in range(bottom_layout.count()):
-                    item = bottom_layout.itemAt(i)
-                    if item and isinstance(item.widget(), QWidget):
-                        if isinstance(item.widget().layout(), QHBoxLayout):
-                            item.widget().deleteLater()
-                            break
+            # Populate table with formatted data
+            for row, record in enumerate(data):
+                # Create checkbox in first column
+                checkbox = QCheckBox()
+                checkbox_container = QWidget()
+                checkbox_layout = QHBoxLayout(checkbox_container)
+                checkbox_layout.setContentsMargins(16, 16, 16, 16)
+                checkbox_layout.addWidget(checkbox, alignment=Qt.AlignCenter)
+                self.table.setCellWidget(row, 0, checkbox_container)
                 
-                # Create and add new pagination container
-                new_pagination = self.setup_pagination()
-                bottom_layout.insertWidget(2, new_pagination)
+                # Add data cells with proper formatting
+                for col, value in enumerate(record):
+                    if col == 5:  # Status column
+                        self.create_status_cell(row, col + 1, value == 1)
+                    else:
+                        item = QTableWidgetItem(str(value))
+                        item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                        self.table.setItem(row, col + 1, item)
+                
+                # Add edit button in last column
+                self.create_action_cell(row)
+                
+                # Set consistent row height
+                self.table.setRowHeight(row, 72)
             
         except sqlite3.Error as e:
-            print(f"Error deleting records: {e}")
+            QMessageBox.critical(self, "Database Error", f"Error loading data: {str(e)}")
             
         finally:
             if conn:
