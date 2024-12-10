@@ -5,6 +5,9 @@ from PyQt5.QtCore import Qt
 from Mobil.MobilUI import MobilUI
 from Peminjaman.peminjamanUI import PeminjamanUI
 from Pelanggan.PelangganController import PelangganController
+from Laporan.HistoriPeminjaman import HistoriPEminjamanController
+from Laporan.Pendapatan import PendapatanController
+from Laporan.StatusKetersediaan import StatusKetersediaanController
 
 class MenuUI(QMainWindow):
     def __init__(self):
@@ -39,9 +42,9 @@ class MenuUI(QMainWindow):
         # Panggil Pelanggan UI
         self.jadwalpengembalian = QWidget()
         self.pembayaranrental = QWidget()
-        self.historipeminjamanmobil = QWidget()
-        self.statusketersediaanmobil = QWidget()
-        self.pendapatan = QWidget()
+        self.historipeminjamanmobil = HistoriPEminjamanController(schema_path="src/schema.sql")
+        self.statusketersediaanmobil = StatusKetersediaanController(schema_path="src/schema.sql")
+        self.pendapatan = PendapatanController(schema_path="src/schema.sql")
 
         # Add widgets to stacked widget
         self.stackedWidget.addWidget(self.menu)
