@@ -89,7 +89,7 @@ class MenuUI(QMainWindow):
         # Sidebar tree
         sidebar_tree = QTreeWidget()
         sidebar_tree.setHeaderHidden(True)
-        sidebar_tree.setFixedWidth(self.sidebar_width)
+        sidebar_tree.setFixedWidth(int(self.sidebar_width * 0.9))
         sidebar_tree.setExpandsOnDoubleClick(False)
         sidebar_tree.setStyleSheet("""
             QTreeWidget {
