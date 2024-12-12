@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
 from PyQt5.QtCore import Qt
 import sqlite3
 
-class StatusPengembalian(QWidget):
+class JadwalPengembalian(QWidget):
     def __init__(self, schema_path, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
@@ -28,9 +28,6 @@ class StatusPengembalian(QWidget):
         self.prev_button = None
         self.next_button = None
         self.last_button = None
-        
-        # Initialize database before setting up UI
-        self.init_database()
         
         # Create main layout with proper spacing
         self.setup_main_layout()
@@ -56,20 +53,34 @@ class StatusPengembalian(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
-        
+
+        # Calculate total pages
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM Peminjaman')
+        total_records = cursor.fetchone()[0]
+        self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
+        conn.close()
+
+        self.message_error = QLabel("Tidak ada notifikasi", self)
+        # If no records, hide pagination and return empty container
+        if total_records == 0:
+            self.message_error.setAlignment(Qt.AlignCenter)
+            self.message_error.setStyleSheet("font-size: 42px; font-family: 'Poly', sans-serif; color: #6B7280;")
+            layout.addWidget(self.message_error)
+            self.message_error.hide()
+            return
+
         # Initialize and setup the table
         self.setup_table()
         layout.addWidget(self.table)
         
+
         # Setup bottom controls (pagination, buttons)
         bottom_layout = self.setup_bottom_controls()
         layout.addLayout(bottom_layout)
 
-        self.message_error = QLabel("Tidak ada notifikasi", self)
-        self.message_error.setAlignment(Qt.AlignCenter)
-        self.message_error.setStyleSheet("font-size: 18px; color: #6B7280;")
-        layout.addWidget(self.message_error)
-        self.message_error.hide()
+
 
 
     def setup_table(self):
@@ -158,6 +169,11 @@ class StatusPengembalian(QWidget):
         total_records = cursor.fetchone()[0]
         self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
         conn.close()
+
+        # If no records, hide pagination and return empty container
+        if total_records == 0:
+            pagination_container.hide()
+            return pagination_container
         
         # Style for all pagination buttons
         button_style = """
@@ -283,86 +299,6 @@ class StatusPengembalian(QWidget):
         if self.current_page < self.total_pages:
             self.go_to_page(self.current_page + 1)
 
-    def init_database(self):
-        """Initialize the database and create tables with sample customer data."""
-        try:
-            # Establish database connection
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Create the Pelanggan table with proper column order
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Peminjaman (
-                    ID INTEGER PRIMARY KEY,
-                    NomorPlat TEXT,
-                    NIK TEXT,
-                    Nama TEXT,
-                    Kontak TEXT,
-                    TanggalPeminjaman DATE,
-                    TanggalPengembalian DATE,
-                    TanggalPembayaran DATE,
-                    TenggatPengembalian DATE,
-                    TenggatPembayaran DATE,
-                    BesarPembayaran INTEGER,
-                    StatusPengembalian INTEGER,
-                    StatusPembayaran INTEGER
-                )
-            ''')
-            
-            # Check if table is empty and needs sample data
-            cursor.execute('SELECT COUNT(*) FROM Peminjaman')
-            if cursor.fetchone()[0] == 0:
-                # Prepare sample data with 60 varied entries
-                sample_data = [
-                    ('B 5001 KGG', '3201001991010001', 'Yu Ji-min', '081234567891', '2024-12-01', '2024-12-05', '2024-12-06', '2024-12-05', '2024-12-06', 550000, 1, 1),
-                    ('B 5002 SGG', '3202002991020002', 'Aeri Uchinaga', '082345678902', '2024-12-02', None, None, '2024-12-10', '2024-12-12', 750000, 0, 0),
-                    ('B 5003 NIN', '3203003991030003', 'Kim Min-Jeong', '083456789013', '2024-12-03', '2024-12-07', '2024-12-08', '2024-12-07', '2024-12-09', 600000, 1, 1),
-                    ('B 5004 NYN', '3204004991040004', 'Níng Yìzhuó', '084567890124', '2024-12-04', None, None, '2024-12-11', '2024-12-13', 800000, 0, 0),
-                    ('B 5005 HKL', '3205005991050005', 'Julie Han', '085678901235', '2024-12-05', '2024-12-09', '2024-12-10', '2024-12-09', '2024-12-11', 650000, 1, 1),
-                    ('B 5006 JKL', '3206006991060006', 'Anatchaya Suputtipong', '086789012346', '2024-12-06', None, None, '2024-12-13', '2024-12-15', 700000, 0, 0),
-                    ('B 5007 SKL', '3207007991070007', 'Shim Hyewon', '087890123457', '2024-12-07', '2024-12-11', '2024-12-12', '2024-12-11', '2024-12-13', 620000, 1, 1),
-                    ('B 5008 PKL', '3208008991080008', 'Won Haneul', '088901234568', '2024-12-08', None, None, '2024-12-15', '2024-12-17', 780000, 0, 0),
-                    ('B 5009 NTW', '3209009991090009', 'Park Jihyo', '089012345679', '2024-12-09', '2024-12-13', '2024-12-14', '2024-12-13', '2024-12-15', 680000, 1, 1),
-                    ('B 5010 JTW', '3210010991100010', 'Im Na Yeon', '081123456780', '2024-12-10', None, None, '2024-12-17', '2024-12-19', 720000, 0, 0),
-                    ('B 5011 MTW', '3211011991110011', 'Yoo Jeong Yeon', '082234567891', '2024-12-11', '2024-12-15', '2024-12-16', '2024-12-15', '2024-12-17', 590000, 1, 1),
-                    ('B 5012 STW', '3212012991120012', 'Hirai Momo', '083345678902', '2024-12-12', None, None, '2024-12-19', '2024-12-21', 810000, 0, 0),
-                    ('B 5013 DTW', '3213013991130013', 'Minatozaki Sana', '084456789013', '2024-12-13', '2024-12-17', '2024-12-18', '2024-12-17', '2024-12-19', 640000, 1, 1),
-                    ('B 5014 CTW', '3214014991140014', 'Myoui Mina', '085567890124', '2024-12-14', None, None, '2024-12-21', '2024-12-23', 690000, 0, 0),
-                    ('B 5015 MTW', '3215015991150015', 'Kim Da Hyun', '086678901235', '2024-12-15', '2024-12-19', '2024-12-20', '2024-12-19', '2024-12-21', 760000, 1, 1),
-                    ('B 5016 TTW', '3216016991160016', 'Son Chae Young', '087789012346', '2024-12-16', None, None, '2024-12-23', '2024-12-25', 790000, 0, 0),
-                    ('B 5017 HTW', '3217017991170017', 'Chou Tzuyu', '088890123457', '2024-12-17', '2024-12-21', '2024-12-22', '2024-12-21', '2024-12-23', 670000, 1, 1),
-                    ('B 5018 RJK', '3218018991180018', 'Kim Minji', '089901234568', '2024-12-18', '2024-12-22', '2024-12-23', '2024-12-22', '2024-12-24', 610000, 1, 1),
-                    ('B 5019 BJK', '3219019991190019', 'Hanni Pham', '081012345679', '2024-12-19', None, None, '2024-12-26', '2024-12-28', 730000, 0, 0),
-                    ('B 5020 DJK', '3220020991200020', 'Danielle Marsh', '082123456780', '2024-12-20', '2024-12-24', '2024-12-25', '2024-12-24', '2024-12-26', 660000, 1, 1),
-                    ('B 5021 FJK', '3221021991210021', 'Kang Haerin', '083234567891', '2024-12-21', None, None, '2024-12-28', '2024-12-30', 770000, 0, 0),
-                    ('B 5022 GJK', '3222022991220022', 'Lee Hyein', '084345678902', '2024-12-22', '2024-12-26', '2024-12-27', '2024-12-26', '2024-12-28', 630000, 1, 1),
-                    ('B 5023 HJK', '3223023991230023', 'Hu Tao', '085456789013', '2024-12-23', None, None, '2024-12-30', '2024-01-01', 800000, 0, 0),
-                    ('B 5024 IJK', '3224024991240024', 'Ucok Gallagher', '086567890124', '2024-12-24', '2024-12-28', '2024-12-29', '2024-12-28', '2024-12-30', 690000, 1, 1),
-                    ('B 5025 JJK', '3225025991250025', 'Yayat Sigam', '087678901235', '2024-12-25', None, None, '2024-01-01', '2024-01-03', 740000, 0, 0),
-                    ('B 5026 KJK', '3226026991260026', 'Rzi Rach', '088789012346', '2024-12-26', '2024-12-30', '2024-12-31', '2024-12-30', '2024-01-01', 620000, 1, 1),
-                    ('B 5027 LJK', '3227027991270027', 'Dittt PWN', '089890123457', '2024-12-27', None, None, '2024-01-03', '2024-01-05', 710000, 0, 0),
-                    ('B 5028 MJK', '3228028991280028', 'W1ntr', '081901234568', '2024-12-28', '2024-01-01', '2024-01-02', '2024-01-01', '2024-01-03', 650000, 1, 1),
-                    ('B 5029 NJK', '3229029991290029', 'Freya Jayawardhana', '082012345679', '2024-12-29', None, None, '2024-01-06', '2024-01-08', 790000, 0, 0),
-                    ('B 5030 OJK', '3230030991300030', 'Rizialfa', '083123456780', '2024-12-30', '2024-01-03', '2024-01-04', '2024-01-03', '2024-01-05', 680000, 1, 1)
-                ]
-                
-                # Insert all sample data
-                cursor.executemany('''
-                    INSERT INTO Peminjaman (NomorPlat, NIK, Nama, Kontak, TanggalPeminjaman, TanggalPengembalian, TanggalPembayaran, TenggatPengembalian, TenggatPembayaran, BesarPembayaran, StatusPengembalian, StatusPembayaran)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', sample_data)
-                
-            # Commit changes and ensure they're saved
-            conn.commit()
-            
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            
-        finally:
-            # Ensure connection is closed even if an error occurs
-            if conn:
-                conn.close()
-
     def load_data(self):
         """Load and display data from the database with pagination."""
         try:
@@ -379,10 +315,6 @@ class StatusPengembalian(QWidget):
             data = cursor.fetchall()
 
             if not data:
-                # No data to display
-                self.table.setColumnCount(0)
-                self.table.setRowCount(0)
-
                 # Clear pagination buttons
                 for btn in self.pagination_buttons:
                     btn.deleteLater()
@@ -449,7 +381,7 @@ class StatusPengembalian(QWidget):
 
 
 
-class StatusPembayaran(QWidget):
+class PembayaranRental(QWidget):
     def __init__(self, schema_path, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
@@ -472,9 +404,6 @@ class StatusPembayaran(QWidget):
         self.prev_button = None
         self.next_button = None
         self.last_button = None
-        
-        # Initialize database before setting up UI
-        self.init_database()
         
         # Create main layout with proper spacing
         self.setup_main_layout()
@@ -500,21 +429,32 @@ class StatusPembayaran(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
-        
+
+        # Calculate total pages
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM Peminjaman')
+        total_records = cursor.fetchone()[0]
+        self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
+        conn.close()
+
+        self.message_error = QLabel("Tidak ada notifikasi", self)
+        # If no records, hide pagination and return empty container
+        if total_records == 0:
+            self.message_error.setAlignment(Qt.AlignCenter)
+            self.message_error.setStyleSheet("font-size: 42px; font-family: 'Poly', sans-serif; color: #6B7280;")
+            layout.addWidget(self.message_error)
+            self.message_error.hide()
+            return
+
         # Initialize and setup the table
         self.setup_table()
         layout.addWidget(self.table)
         
+
         # Setup bottom controls (pagination, buttons)
         bottom_layout = self.setup_bottom_controls()
         layout.addLayout(bottom_layout)
-
-        self.message_error = QLabel("Tidak ada notifikasi", self)
-        self.message_error.setAlignment(Qt.AlignCenter)
-        self.message_error.setStyleSheet("font-size: 18px; color: #6B7280;")
-        layout.addWidget(self.message_error)
-        self.message_error.hide()
-
 
     def setup_table(self):
         """Set up the table with calculated column widths based on screen size."""
@@ -602,6 +542,11 @@ class StatusPembayaran(QWidget):
         total_records = cursor.fetchone()[0]
         self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
         conn.close()
+
+        # If no records, hide pagination and return empty container
+        if total_records == 0:
+            pagination_container.hide()
+            return pagination_container
         
         # Style for all pagination buttons
         button_style = """
@@ -727,86 +672,6 @@ class StatusPembayaran(QWidget):
         if self.current_page < self.total_pages:
             self.go_to_page(self.current_page + 1)
 
-    def init_database(self):
-        """Initialize the database and create tables with sample customer data."""
-        try:
-            # Establish database connection
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Create the Pelanggan table with proper column order
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Peminjaman (
-                    ID INTEGER PRIMARY KEY,
-                    NomorPlat TEXT,
-                    NIK TEXT,
-                    Nama TEXT,
-                    Kontak TEXT,
-                    TanggalPeminjaman DATE,
-                    TanggalPengembalian DATE,
-                    TanggalPembayaran DATE,
-                    TenggatPengembalian DATE,
-                    TenggatPembayaran DATE,
-                    BesarPembayaran INTEGER,
-                    StatusPengembalian INTEGER,
-                    StatusPembayaran INTEGER
-                )
-            ''')
-            
-            # Check if table is empty and needs sample data
-            cursor.execute('SELECT COUNT(*) FROM Peminjaman')
-            if cursor.fetchone()[0] == 0:
-                # Prepare sample data with 60 varied entries
-                sample_data = [
-                    ('B 5001 KGG', '3201001991010001', 'Yu Ji-min', '081234567891', '2024-12-01', '2024-12-05', '2024-12-06', '2024-12-05', '2024-12-06', 550000, 1, 1),
-                    ('B 5002 SGG', '3202002991020002', 'Aeri Uchinaga', '082345678902', '2024-12-02', None, None, '2024-12-10', '2024-12-12', 750000, 0, 0),
-                    ('B 5003 NIN', '3203003991030003', 'Kim Min-Jeong', '083456789013', '2024-12-03', '2024-12-07', '2024-12-08', '2024-12-07', '2024-12-09', 600000, 1, 1),
-                    ('B 5004 NYN', '3204004991040004', 'Níng Yìzhuó', '084567890124', '2024-12-04', None, None, '2024-12-11', '2024-12-13', 800000, 0, 0),
-                    ('B 5005 HKL', '3205005991050005', 'Julie Han', '085678901235', '2024-12-05', '2024-12-09', '2024-12-10', '2024-12-09', '2024-12-11', 650000, 1, 1),
-                    ('B 5006 JKL', '3206006991060006', 'Anatchaya Suputtipong', '086789012346', '2024-12-06', None, None, '2024-12-13', '2024-12-15', 700000, 0, 0),
-                    ('B 5007 SKL', '3207007991070007', 'Shim Hyewon', '087890123457', '2024-12-07', '2024-12-11', '2024-12-12', '2024-12-11', '2024-12-13', 620000, 1, 1),
-                    ('B 5008 PKL', '3208008991080008', 'Won Haneul', '088901234568', '2024-12-08', None, None, '2024-12-15', '2024-12-17', 780000, 0, 0),
-                    ('B 5009 NTW', '3209009991090009', 'Park Jihyo', '089012345679', '2024-12-09', '2024-12-13', '2024-12-14', '2024-12-13', '2024-12-15', 680000, 1, 1),
-                    ('B 5010 JTW', '3210010991100010', 'Im Na Yeon', '081123456780', '2024-12-10', None, None, '2024-12-17', '2024-12-19', 720000, 0, 0),
-                    ('B 5011 MTW', '3211011991110011', 'Yoo Jeong Yeon', '082234567891', '2024-12-11', '2024-12-15', '2024-12-16', '2024-12-15', '2024-12-17', 590000, 1, 1),
-                    ('B 5012 STW', '3212012991120012', 'Hirai Momo', '083345678902', '2024-12-12', None, None, '2024-12-19', '2024-12-21', 810000, 0, 0),
-                    ('B 5013 DTW', '3213013991130013', 'Minatozaki Sana', '084456789013', '2024-12-13', '2024-12-17', '2024-12-18', '2024-12-17', '2024-12-19', 640000, 1, 1),
-                    ('B 5014 CTW', '3214014991140014', 'Myoui Mina', '085567890124', '2024-12-14', None, None, '2024-12-21', '2024-12-23', 690000, 0, 0),
-                    ('B 5015 MTW', '3215015991150015', 'Kim Da Hyun', '086678901235', '2024-12-15', '2024-12-19', '2024-12-20', '2024-12-19', '2024-12-21', 760000, 1, 1),
-                    ('B 5016 TTW', '3216016991160016', 'Son Chae Young', '087789012346', '2024-12-16', None, None, '2024-12-23', '2024-12-25', 790000, 0, 0),
-                    ('B 5017 HTW', '3217017991170017', 'Chou Tzuyu', '088890123457', '2024-12-17', '2024-12-21', '2024-12-22', '2024-12-21', '2024-12-23', 670000, 1, 1),
-                    ('B 5018 RJK', '3218018991180018', 'Kim Minji', '089901234568', '2024-12-18', '2024-12-22', '2024-12-23', '2024-12-22', '2024-12-24', 610000, 1, 1),
-                    ('B 5019 BJK', '3219019991190019', 'Hanni Pham', '081012345679', '2024-12-19', None, None, '2024-12-26', '2024-12-28', 730000, 0, 0),
-                    ('B 5020 DJK', '3220020991200020', 'Danielle Marsh', '082123456780', '2024-12-20', '2024-12-24', '2024-12-25', '2024-12-24', '2024-12-26', 660000, 1, 1),
-                    ('B 5021 FJK', '3221021991210021', 'Kang Haerin', '083234567891', '2024-12-21', None, None, '2024-12-28', '2024-12-30', 770000, 0, 0),
-                    ('B 5022 GJK', '3222022991220022', 'Lee Hyein', '084345678902', '2024-12-22', '2024-12-26', '2024-12-27', '2024-12-26', '2024-12-28', 630000, 1, 1),
-                    ('B 5023 HJK', '3223023991230023', 'Hu Tao', '085456789013', '2024-12-23', None, None, '2024-12-30', '2024-01-01', 800000, 0, 0),
-                    ('B 5024 IJK', '3224024991240024', 'Ucok Gallagher', '086567890124', '2024-12-24', '2024-12-28', '2024-12-29', '2024-12-28', '2024-12-30', 690000, 1, 1),
-                    ('B 5025 JJK', '3225025991250025', 'Yayat Sigam', '087678901235', '2024-12-25', None, None, '2024-01-01', '2024-01-03', 740000, 0, 0),
-                    ('B 5026 KJK', '3226026991260026', 'Rzi Rach', '088789012346', '2024-12-26', '2024-12-30', '2024-12-31', '2024-12-30', '2024-01-01', 620000, 1, 1),
-                    ('B 5027 LJK', '3227027991270027', 'Dittt PWN', '089890123457', '2024-12-27', None, None, '2024-01-03', '2024-01-05', 710000, 0, 0),
-                    ('B 5028 MJK', '3228028991280028', 'W1ntr', '081901234568', '2024-12-28', '2024-01-01', '2024-01-02', '2024-01-01', '2024-01-03', 650000, 1, 1),
-                    ('B 5029 NJK', '3229029991290029', 'Freya Jayawardhana', '082012345679', '2024-12-29', None, None, '2024-01-06', '2024-01-08', 790000, 0, 0),
-                    ('B 5030 OJK', '3230030991300030', 'Rizialfa', '083123456780', '2024-12-30', '2024-01-03', '2024-01-04', '2024-01-03', '2024-01-05', 680000, 1, 1)
-                ]
-                
-                # Insert all sample data
-                cursor.executemany('''
-                    INSERT INTO Peminjaman (NomorPlat, NIK, Nama, Kontak, TanggalPeminjaman, TanggalPengembalian, TanggalPembayaran, TenggatPengembalian, TenggatPembayaran, BesarPembayaran, StatusPengembalian, StatusPembayaran)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', sample_data)
-                
-            # Commit changes and ensure they're saved
-            conn.commit()
-            
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            
-        finally:
-            # Ensure connection is closed even if an error occurs
-            if conn:
-                conn.close()
-
     def load_data(self):
         """Load and display data from the database with pagination."""
         try:
@@ -823,10 +688,6 @@ class StatusPembayaran(QWidget):
             data = cursor.fetchall()
 
             if not data:
-                # No data to display
-                self.table.setColumnCount(0)
-                self.table.setRowCount(0)
-
                 # Clear pagination buttons
                 for btn in self.pagination_buttons:
                     btn.deleteLater()
@@ -862,15 +723,15 @@ class StatusPembayaran(QWidget):
             if conn:
                 conn.close()
 
-    def create_status_cell(self, row, col, is_kembali):
+    def create_status_cell(self, row, col, is_bayar):
         """Create a styled status cell indicating whether a customer has borrowed items."""
-        status_text = "Sudah" if is_kembali else "Belum"
+        status_text = "Sudah" if is_bayar else "Belum"
         status_btn = QPushButton(status_text)
         status_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {'#D1FAE5' if is_kembali else '#FEE2E2'};
-                color: {'#10B981' if is_kembali else '#EF4444'};
-                border: 1px solid {'#10B981' if is_kembali else '#EF4444'};
+                background-color: {'#D1FAE5' if is_bayar else '#FEE2E2'};
+                color: {'#10B981' if is_bayar else '#EF4444'};
+                border: 1px solid {'#10B981' if is_bayar else '#EF4444'};
                 border-radius: 10px;
                 padding-right: 12px;
                 padding-left: 12px;
