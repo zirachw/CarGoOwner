@@ -5,6 +5,7 @@ from PyQt5.QtCore import Qt
 from Mobil.MobilUI import MobilUI
 from Peminjaman.peminjamanUI import PeminjamanUI
 from Pelanggan.PelangganController import PelangganController
+from Notifikasi.NotifikasiController import StatusPengembalian
 from Laporan.HistoriPeminjaman import HistoriPEminjamanController
 from Laporan.Pendapatan import PendapatanController
 from Laporan.StatusKetersediaan import StatusKetersediaanController
@@ -40,7 +41,7 @@ class MenuUI(QMainWindow):
         self.peminjaman = PeminjamanUI(schema_path="src/schema.sql")
         self.pelanggan = PelangganController(schema_path="src/schema.sql")
         # Panggil Pelanggan UI
-        self.jadwalpengembalian = QWidget()
+        self.jadwalpengembalian = StatusPengembalian(schema_path="src/schema.sql")
         self.pembayaranrental = QWidget()
         self.historipeminjamanmobil = HistoriPEminjamanController(schema_path="src/schema.sql")
         self.statusketersediaanmobil = StatusKetersediaanController(schema_path="src/schema.sql")
