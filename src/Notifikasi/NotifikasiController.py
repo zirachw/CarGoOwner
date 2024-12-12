@@ -1,10 +1,8 @@
-import sys
 import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
                            QLabel, QTableWidget, QTableWidgetItem, QHeaderView, 
-                           QFrame, QSizePolicy, QCheckBox, QToolButton, QDesktopWidget)
-from PyQt5.QtCore import Qt, QRect
-from PyQt5.QtGui import QFont, QColor, QIcon
+                           QDesktopWidget)
+from PyQt5.QtCore import Qt
 import sqlite3
 
 class StatusPengembalian(QWidget):
@@ -18,7 +16,7 @@ class StatusPengembalian(QWidget):
         # Store important paths for database access
         self.schema_path = schema_path
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerStatusPengembalian.db")
+        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPeminjaman.db")
         
         # Initialize pagination variables
         self.current_page = 1
@@ -67,13 +65,20 @@ class StatusPengembalian(QWidget):
         bottom_layout = self.setup_bottom_controls()
         layout.addLayout(bottom_layout)
 
+        self.message_error = QLabel("Tidak ada notifikasi", self)
+        self.message_error.setAlignment(Qt.AlignCenter)
+        self.message_error.setStyleSheet("font-size: 18px; color: #6B7280;")
+        layout.addWidget(self.message_error)
+        self.message_error.hide()
+
+
     def setup_table(self):
         """Set up the table with calculated column widths based on screen size."""
         self.table = QTableWidget()
         self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels([
             #"", "NIK", "Nama", "Kontak", "Alamat", "Credit Point", "Status", "Aksi"
-            "ID", "NIK", "Nama", "Kontak", "NomorPlat", "TanggalPeminjaman", "TanggalPengembalian", "StatusPengembalian"
+            "ID", "NIK", "Nama", "Kontak", "Nomor Plat", "Tanggal Peminjaman", "Tanggal Pengembalian", "Status Pengembalian"
         ])
         
         # Define column percentages (total should be 100)
@@ -128,52 +133,13 @@ class StatusPengembalian(QWidget):
         """Set up the bottom controls with proper spacing and alignment."""
         bottom_layout = QHBoxLayout()
         
-        # Create Select/Deselect All button
-        select_all_btn = QPushButton("Select/Deselect All")
-        select_all_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #f5f5f5;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                color: #666666;
-                font-family: 'Poly', sans-serif;
-                font-size: 13px;
-            }
-            QPushButton:hover {
-                background-color: #e8e8e8;
-            }
-        """)
-        
         # Set up pagination
         pagination_container = self.setup_pagination()
         
-        # Create action buttons
-        add_button = QPushButton("+")
-        delete_button = QPushButton("×")
-        
-        for btn in (add_button, delete_button):
-            btn.setFixedSize(56, 56)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {('#10B981' if btn == add_button else '#EF4444')};
-                    border-radius: 28px;
-                    color: white;
-                    font-size: 24px;
-                }}
-                QPushButton:hover {{
-                    background-color: {('#059669' if btn == add_button else '#DC2626')};
-                }}
-            """)
-        
         # Assemble the bottom layout
-        bottom_layout.addWidget(select_all_btn)
         bottom_layout.addStretch()
         bottom_layout.addWidget(pagination_container)
         bottom_layout.addStretch()
-        bottom_layout.addWidget(add_button)
-        bottom_layout.addSpacing(10)
-        bottom_layout.addWidget(delete_button)
         
         return bottom_layout
 
@@ -328,13 +294,18 @@ class StatusPengembalian(QWidget):
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Peminjaman (
                     ID INTEGER PRIMARY KEY,
+                    NomorPlat TEXT,
                     NIK TEXT,
                     Nama TEXT,
                     Kontak TEXT,
-                    NomorPlat TEXT,
                     TanggalPeminjaman DATE,
                     TanggalPengembalian DATE,
-                    StatusPengembalian INTEGER
+                    TanggalPembayaran DATE,
+                    TenggatPengembalian DATE,
+                    TenggatPembayaran DATE,
+                    BesarPembayaran INTEGER,
+                    StatusPengembalian INTEGER,
+                    StatusPembayaran INTEGER
                 )
             ''')
             
@@ -343,22 +314,42 @@ class StatusPengembalian(QWidget):
             if cursor.fetchone()[0] == 0:
                 # Prepare sample data with 60 varied entries
                 sample_data = [
-                    ('3602041211870001', 'Fariz Rifqi', '08554677321', 'D 1677 SAB', '2024-12-10', '2024-12-17',  1),
-                    ('3602041211870002', 'Razi Rachman', '08126016657', 'N 3999 RO', '2024-12-10', '2024-12-17', 0),
-                    ('3602041211870003', 'Ahmad Dharma', '08139876543', 'A 1111 BB', '2024-12-10', '2024-12-17', 1),
-                    ('3602041211870004', 'Siti Nurhaliza', '08567890123', 'H 0000 NEY',  '2024-12-10', '2024-12-17', 0),
-                    ('3602041211870005', 'Budi Santoso', '08234567890', 'T 133 ABC', '2024-12-10', '2024-12-17', 1),
-                    ('3602041211870006', 'Diana Putri', '08198765432', 'C 144 NA','2024-12-10', '2024-12-17', 0),
-                    ('3602041211870007', 'Eko Prasetyo', '08521234567', 'B 4444 GG', '2024-12-10', '2024-12-17',  1),
-                    ('3602041211870008', 'Fitri Handayani', '08234567891', 'N 111 JR',  '2024-12-10', '2024-12-17',  0),
-                    ('3602041211870009', 'Gunawan Wibowo', '08187654321', 'A 2345 HMB', '2024-12-10', '2024-12-17',  1),
-                    ('3602041211870010', 'Hana Safira', '08561234567',  'S 19 MA', '2024-12-10', '2024-12-17', 0),
+                    ('B 5001 KGG', '3201001991010001', 'Yu Ji-min', '081234567891', '2024-12-01', '2024-12-05', '2024-12-06', '2024-12-05', '2024-12-06', 550000, 1, 1),
+                    ('B 5002 SGG', '3202002991020002', 'Aeri Uchinaga', '082345678902', '2024-12-02', None, None, '2024-12-10', '2024-12-12', 750000, 0, 0),
+                    ('B 5003 NIN', '3203003991030003', 'Kim Min-Jeong', '083456789013', '2024-12-03', '2024-12-07', '2024-12-08', '2024-12-07', '2024-12-09', 600000, 1, 1),
+                    ('B 5004 NYN', '3204004991040004', 'Níng Yìzhuó', '084567890124', '2024-12-04', None, None, '2024-12-11', '2024-12-13', 800000, 0, 0),
+                    ('B 5005 HKL', '3205005991050005', 'Julie Han', '085678901235', '2024-12-05', '2024-12-09', '2024-12-10', '2024-12-09', '2024-12-11', 650000, 1, 1),
+                    ('B 5006 JKL', '3206006991060006', 'Anatchaya Suputtipong', '086789012346', '2024-12-06', None, None, '2024-12-13', '2024-12-15', 700000, 0, 0),
+                    ('B 5007 SKL', '3207007991070007', 'Shim Hyewon', '087890123457', '2024-12-07', '2024-12-11', '2024-12-12', '2024-12-11', '2024-12-13', 620000, 1, 1),
+                    ('B 5008 PKL', '3208008991080008', 'Won Haneul', '088901234568', '2024-12-08', None, None, '2024-12-15', '2024-12-17', 780000, 0, 0),
+                    ('B 5009 NTW', '3209009991090009', 'Park Jihyo', '089012345679', '2024-12-09', '2024-12-13', '2024-12-14', '2024-12-13', '2024-12-15', 680000, 1, 1),
+                    ('B 5010 JTW', '3210010991100010', 'Im Na Yeon', '081123456780', '2024-12-10', None, None, '2024-12-17', '2024-12-19', 720000, 0, 0),
+                    ('B 5011 MTW', '3211011991110011', 'Yoo Jeong Yeon', '082234567891', '2024-12-11', '2024-12-15', '2024-12-16', '2024-12-15', '2024-12-17', 590000, 1, 1),
+                    ('B 5012 STW', '3212012991120012', 'Hirai Momo', '083345678902', '2024-12-12', None, None, '2024-12-19', '2024-12-21', 810000, 0, 0),
+                    ('B 5013 DTW', '3213013991130013', 'Minatozaki Sana', '084456789013', '2024-12-13', '2024-12-17', '2024-12-18', '2024-12-17', '2024-12-19', 640000, 1, 1),
+                    ('B 5014 CTW', '3214014991140014', 'Myoui Mina', '085567890124', '2024-12-14', None, None, '2024-12-21', '2024-12-23', 690000, 0, 0),
+                    ('B 5015 MTW', '3215015991150015', 'Kim Da Hyun', '086678901235', '2024-12-15', '2024-12-19', '2024-12-20', '2024-12-19', '2024-12-21', 760000, 1, 1),
+                    ('B 5016 TTW', '3216016991160016', 'Son Chae Young', '087789012346', '2024-12-16', None, None, '2024-12-23', '2024-12-25', 790000, 0, 0),
+                    ('B 5017 HTW', '3217017991170017', 'Chou Tzuyu', '088890123457', '2024-12-17', '2024-12-21', '2024-12-22', '2024-12-21', '2024-12-23', 670000, 1, 1),
+                    ('B 5018 RJK', '3218018991180018', 'Kim Minji', '089901234568', '2024-12-18', '2024-12-22', '2024-12-23', '2024-12-22', '2024-12-24', 610000, 1, 1),
+                    ('B 5019 BJK', '3219019991190019', 'Hanni Pham', '081012345679', '2024-12-19', None, None, '2024-12-26', '2024-12-28', 730000, 0, 0),
+                    ('B 5020 DJK', '3220020991200020', 'Danielle Marsh', '082123456780', '2024-12-20', '2024-12-24', '2024-12-25', '2024-12-24', '2024-12-26', 660000, 1, 1),
+                    ('B 5021 FJK', '3221021991210021', 'Kang Haerin', '083234567891', '2024-12-21', None, None, '2024-12-28', '2024-12-30', 770000, 0, 0),
+                    ('B 5022 GJK', '3222022991220022', 'Lee Hyein', '084345678902', '2024-12-22', '2024-12-26', '2024-12-27', '2024-12-26', '2024-12-28', 630000, 1, 1),
+                    ('B 5023 HJK', '3223023991230023', 'Hu Tao', '085456789013', '2024-12-23', None, None, '2024-12-30', '2024-01-01', 800000, 0, 0),
+                    ('B 5024 IJK', '3224024991240024', 'Ucok Gallagher', '086567890124', '2024-12-24', '2024-12-28', '2024-12-29', '2024-12-28', '2024-12-30', 690000, 1, 1),
+                    ('B 5025 JJK', '3225025991250025', 'Yayat Sigam', '087678901235', '2024-12-25', None, None, '2024-01-01', '2024-01-03', 740000, 0, 0),
+                    ('B 5026 KJK', '3226026991260026', 'Rzi Rach', '088789012346', '2024-12-26', '2024-12-30', '2024-12-31', '2024-12-30', '2024-01-01', 620000, 1, 1),
+                    ('B 5027 LJK', '3227027991270027', 'Dittt PWN', '089890123457', '2024-12-27', None, None, '2024-01-03', '2024-01-05', 710000, 0, 0),
+                    ('B 5028 MJK', '3228028991280028', 'W1ntr', '081901234568', '2024-12-28', '2024-01-01', '2024-01-02', '2024-01-01', '2024-01-03', 650000, 1, 1),
+                    ('B 5029 NJK', '3229029991290029', 'Freya Jayawardhana', '082012345679', '2024-12-29', None, None, '2024-01-06', '2024-01-08', 790000, 0, 0),
+                    ('B 5030 OJK', '3230030991300030', 'Rizialfa', '083123456780', '2024-12-30', '2024-01-03', '2024-01-04', '2024-01-03', '2024-01-05', 680000, 1, 1)
                 ]
                 
                 # Insert all sample data
                 cursor.executemany('''
-                    INSERT INTO Peminjaman (NIK, Nama, Kontak, NomorPlat, TanggalPeminjaman, TanggalPengembalian, StatusPengembalian)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO Peminjaman (NomorPlat, NIK, Nama, Kontak, TanggalPeminjaman, TanggalPengembalian, TanggalPembayaran, TenggatPengembalian, TenggatPembayaran, BesarPembayaran, StatusPengembalian, StatusPembayaran)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', sample_data)
                 
             # Commit changes and ensure they're saved
@@ -386,8 +377,25 @@ class StatusPengembalian(QWidget):
                 OFFSET {offset}
             ''')
             data = cursor.fetchall()
+
+            if not data:
+                # No data to display
+                self.table.setColumnCount(0)
+                self.table.setRowCount(0)
+
+                # Clear pagination buttons
+                for btn in self.pagination_buttons:
+                    btn.deleteLater()
+                self.pagination_buttons.clear()
+
+                # Update button states
+                self.update_pagination_buttons()
+
+                self.message_error.show()
+                return
             
             # Set up table rows
+            self.message_error.hide()
             self.table.setRowCount(len(data))
             for row, record in enumerate(data):
                 # Add data cells
@@ -401,7 +409,7 @@ class StatusPengembalian(QWidget):
                         self.table.setItem(row, col, item)
                 
                 # Set row height
-                self.table.setRowHeight(row, 72)
+                self.table.setRowHeight(row, 115)
             
         except sqlite3.Error as e:
             print(f"Error loading data: {e}")
