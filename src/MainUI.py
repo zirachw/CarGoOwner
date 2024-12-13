@@ -6,7 +6,7 @@ from Mobil.MobilUI import MobilUI
 from Peminjaman.peminjamanUI import PeminjamanUI
 from Pelanggan.PelangganController import PelangganController
 from Notifikasi.NotifikasiController import JadwalPengembalian, PembayaranRental
-from Laporan.HistoriPeminjaman import HistoriPEminjamanController
+from Laporan.HistoriPeminjaman import HistoriPeminjamanController
 from Laporan.Pendapatan import PendapatanController
 from Laporan.StatusKetersediaan import StatusKetersediaanController
 
@@ -43,7 +43,7 @@ class MenuUI(QMainWindow):
         # Panggil Pelanggan UI
         self.jadwalpengembalian = JadwalPengembalian(schema_path="src/schema.sql")
         self.pembayaranrental = PembayaranRental(schema_path="src/schema.sql")
-        self.historipeminjamanmobil = HistoriPEminjamanController(schema_path="src/schema.sql")
+        self.historipeminjamanmobil = HistoriPeminjamanController(schema_path="src/schema.sql")
         self.statusketersediaanmobil = StatusKetersediaanController(schema_path="src/schema.sql")
         self.pendapatan = PendapatanController(schema_path="src/schema.sql")
 
