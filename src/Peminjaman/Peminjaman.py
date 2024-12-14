@@ -19,11 +19,12 @@ class Peminjaman:
                 cursor = conn.cursor()
                 
                 cursor.execute('SELECT COUNT(*) FROM Peminjaman')
-                total_records = cursor.fetchone()[0]
+                totalRecords = cursor.fetchone()[0]
 
                 offset = (current_page - 1) * items_per_page
                 cursor.execute(f'''
                     SELECT ID, NIK, Nama, Kontak, NomorPlat, TanggalPeminjaman, TanggalPengembalian, StatusPengembalian FROM Peminjaman
+                    WHERE StatusPengembalian = 0 AND TenggatPengembalian < DATE(CURRENT_TIMESTAMP, '+7 hours')
                     LIMIT ?
                     OFFSET ?
                 ''', (items_per_page, offset))
@@ -32,7 +33,7 @@ class Peminjaman:
                 data = [dict(zip(columns, row)) for row in cursor.fetchall()]
                 print(data)
 
-                return data, total_records
+                return data, totalRecords
             
             except sqlite3.Error as e:
                 print(f"Error loading data: {e}")
@@ -47,11 +48,12 @@ class Peminjaman:
                 cursor = conn.cursor()
                 
                 cursor.execute('SELECT COUNT(*) FROM Peminjaman')
-                total_records = cursor.fetchone()[0]
+                totalRecords = cursor.fetchone()[0]
 
                 offset = (current_page - 1) * items_per_page
                 cursor.execute(f'''
-                    SELECT ID, NIK, Nama, Kontak, NomorPlat, TenggatPembayaran, BesarPembayaran, StatusPembayaran FROM Peminjaman 
+                    SELECT ID, NIK, Nama, Kontak, NomorPlat, TenggatPembayaran, BesarPembayaran, StatusPembayaran FROM Peminjaman
+                    WHERE StatusPembayaran = 0 AND TenggatPembayaran < DATE(CURRENT_TIMESTAMP, '+7 hours')
                     LIMIT ?
                     OFFSET ?
                 ''', (items_per_page, offset))
@@ -59,7 +61,7 @@ class Peminjaman:
                 columns = ['ID', 'NIK', 'Nama', 'Kontak', 'NomorPlat', 'TenggatPembayaran', 'BesarPembayaran', 'StatusPembayaran']
                 data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-                return data, total_records
+                return data, totalRecords
             
             except sqlite3.Error as e:
                 print(f"Error loading data: {e}")
