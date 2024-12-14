@@ -9,65 +9,44 @@ import re
 class MobilUI(QWidget):
     @staticmethod
     def formMobil(parent, mode="create", mobil_data=None):
-        """
-        Create a reusable form for both creating and editing customer data.
-        
-        Args:
-            parent: Parent widget
-            mode (str): Either "create" or "edit"
-            customer_data (dict, optional): Existing customer data for edit mode
-            
-        Returns:
-            tuple: (QDialog instance, dict of form data) if accepted, (None, None) if cancelled
-        """
         dialog = QDialog(parent)
         
-        # Set the dialog to cover the entire screen for overlay effect
         if parent:
             dialog.setGeometry(parent.window().geometry())
         else:
             screen = QDesktopWidget().screenGeometry()
             dialog.setGeometry(screen)
         
-        # Configure window properties
         dialog.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
         dialog.setAttribute(Qt.WA_TranslucentBackground)
         dialog.setModal(True)
         
-        # Initialize validation states
         validation_states = {field: False for field in ['NomorPlat', 'Gambar', 'Model', 'Warna', 'Tahun', 'StatusKetersediaan']}
         
-        # Main layout setup
         main_layout = QVBoxLayout(dialog)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Create semi-transparent overlay
         overlay = QWidget(dialog)
         overlay.setStyleSheet("QWidget { background-color: rgba(0, 0, 0, 0.85); }")
         overlay.setGeometry(dialog.geometry())
         
-        # Create content container
         content = QWidget(overlay)
         content.setFixedSize(440, 630)
         content.setStyleSheet("QWidget { background-color: white; border-radius: 12px; }")
         
-        # Center content
         content_x = (overlay.width() - content.width()) // 2
         content_y = (overlay.height() - content.height()) // 2
         content.move(content_x, content_y)
         
-        # Content layout
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(32, 24, 32, 32)
         content_layout.setSpacing(24)
         
-        # Create header
         header_layout = QHBoxLayout()
         header_layout.setSpacing(12)
         header_layout.setAlignment(Qt.AlignVCenter)
         
-        # Icon container
         icon_container = QFrame()
         icon_container.setFixedSize(40, 40)
         icon_container.setStyleSheet("""
@@ -79,7 +58,6 @@ class MobilUI(QWidget):
             }
         """)
         
-        # Icon label
         icon_label = QLabel(icon_container)
         icon_label.setFixedSize(40, 40)
         icon_label.setAlignment(Qt.AlignCenter)
@@ -92,7 +70,6 @@ class MobilUI(QWidget):
             }
         """)
         
-        # Title
         title = QLabel("Add a Mobil" if mode == "create" else "Edit Mobil")
         title.setStyleSheet("""
             QLabel {
@@ -105,7 +82,6 @@ class MobilUI(QWidget):
             }
         """)
         
-        # Close button
         close_btn = QPushButton("×")
         close_btn.setFixedSize(24, 24)
         close_btn.setCursor(Qt.PointingHandCursor)
@@ -125,14 +101,12 @@ class MobilUI(QWidget):
         """)
         close_btn.clicked.connect(dialog.reject)
         
-        # Assemble header
         header_layout.addWidget(icon_container)
         header_layout.addWidget(title)
         header_layout.addStretch()
         header_layout.addWidget(close_btn)
         content_layout.addLayout(header_layout)
         
-        # Create form fields
         inputs = {}
         error_labels = {}
         placeholders = {
@@ -170,7 +144,6 @@ class MobilUI(QWidget):
             input_error_layout.setSpacing(2)
 
             def select_image(inputs):
-                """Open a file dialog to select an image and convert it to bytes."""
                 options = QFileDialog.Options()
                 file_path, _ = QFileDialog.getOpenFileName(None, "Select Image", "", "Image Files (*.png *.jpg *.jpeg *.bmp)", options=options)
                 if file_path:
@@ -178,19 +151,20 @@ class MobilUI(QWidget):
                         image_data = file.read()
                         inputs['Gambar'].setProperty('image_data', image_data)
                         inputs['Gambar'].setText("Image Selected")
-                    
+                        validation_states['Gambar'] = True  # Update validation state
+                        update_confirm_button_state()  # Update confirm button state
+            
             if field == 'Gambar':
                 input_field = QPushButton("Select Image")
                 input_field.setFixedHeight(44)
                 input_field.clicked.connect(lambda: select_image(inputs))
                 if mode == "edit" and mobil_data:
-                    inputs['Gambar'] = mobil_data['Gambar']  # Use old image data if not changed
+                    inputs['Gambar'] = mobil_data['Gambar']
             else:
                 input_field = QLineEdit()
                 input_field.setFixedHeight(44)
                 input_field.setPlaceholderText(placeholders[field])
                 
-                # Set field-specific validators
                 if field == 'NomorPlat':
                     input_field.setValidator(QRegExpValidator(QRegExp(r'[A-Z]{1,2}\s\d{1,4}\s[A-Z]{1,3}')))
                 elif field == 'Tahun':
@@ -198,7 +172,6 @@ class MobilUI(QWidget):
                 elif field == 'StatusKetersediaan':
                     input_field.setValidator(QRegExpValidator(QRegExp(r'[01]')))
                     
-                # Set existing values in edit mode
                 if mode == "edit" and mobil_data:
                     input_field.setText(str(mobil_data[field]))
                     
@@ -246,7 +219,6 @@ class MobilUI(QWidget):
             error_labels[field] = error_label
             content_layout.addWidget(field_container)
             
-        # Create confirm button
         confirm_btn = QPushButton("Confirm" if mode == "create" else "Save Changes")
         confirm_btn.clicked.connect(lambda: dialog.accept()) 
         confirm_btn.setFixedSize(376, 44)
@@ -270,9 +242,7 @@ class MobilUI(QWidget):
         """)
         content_layout.addWidget(confirm_btn)
         
-        # Add validation logic
         def validate_field(field, text):
-            """Validate individual field input."""
             is_valid = False
             message = ""
             
@@ -290,36 +260,33 @@ class MobilUI(QWidget):
                 message = "Field ini tidak boleh kosong"
                 
             validation_states[field] = is_valid
-            error_labels[field].setText(message)
+            error_labels[field].setText(message if not is_valid else "")
             input_field = inputs[field]
-            input_field.setProperty("invalid", bool(message))
+            input_field.setProperty("invalid", not is_valid)
             input_field.style().unpolish(input_field)
             input_field.style().polish(input_field)
             
-            # Update confirm button state
+            update_confirm_button_state()
+        
+        def update_confirm_button_state():
             confirm_btn.setEnabled(all(validation_states.values()) or mode == "edit")
         
-        # Connect validation to text changes
         for field, input_field in inputs.items():
             if field != 'Gambar':
                 input_field.textChanged.connect(lambda text, f=field: validate_field(f, text))
-            
-        # Initial validation for edit mode
+        
         if mode == "edit" and mobil_data:
             for field in inputs:
                 if field != 'Gambar':
                     validate_field(field, str(mobil_data[field]))
         
-        # Connect confirm button
         confirm_btn.clicked.connect(dialog.accept)
         
         main_layout.addWidget(overlay)
         
-        # Execute dialog and return results
         if dialog.exec_() == QDialog.Accepted:
             return dialog, {field: (input_field.text() if field != 'Gambar' else input_field.property('image_data') if input_field.property('image_data') else mobil_data['Gambar']) for field, input_field in inputs.items()}
         return None, None
-
     @staticmethod
     def confirmMobil(parent, count):
         """Show confirmation dialog for deleting Cars."""
