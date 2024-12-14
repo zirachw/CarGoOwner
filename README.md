@@ -30,11 +30,11 @@ run :
 
 ## Features
 
-- Mobil
-- Peminjaman
-- Pelanggan
-- Notifikasi
-- Laporan
+- Mobil (add, delete, edit, show)
+- Peminjaman (add, delete, edit, show)
+- Pelanggan (add, delete, edit, show)
+- Notifikasi (show)
+- Laporan (show)
 
 <br>
 <h2 align="left"> 📱 Framework </h2>
