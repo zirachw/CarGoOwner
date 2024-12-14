@@ -28,7 +28,6 @@ lakukan git clone, lalu setup venv + requirements.txt. Setelah itu run file "mai
 - Notifikasi
 - Laporan
 
-## Framework
 <br>
 <h2 align="left"> 📱 Framework </h2>
 <br/>
