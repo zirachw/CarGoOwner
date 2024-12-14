@@ -94,6 +94,8 @@ class DatabaseManager:
             ('Daihatsu', ['Xenia', 'Terios', 'Ayla', 'Sigra', 'Rocky'])
         ]
         
+        img_random = ['./src/Component/Mobil/battery.jpeg', './src/Component/Mobil/Nice.jpeg']
+
         colors = ['Hitam', 'Putih', 'Silver', 'Merah', 'Biru', 'Abu-abu']
         current_year = datetime.now().year
         years = list(range(current_year - 5, current_year + 1))
@@ -110,6 +112,7 @@ class DatabaseManager:
             
             for _ in range(36):
                 brand, models = random.choice(car_models)
+                img = open(random.choice(img_random), 'rb').read()
                 plate = self._generate_plate()
                 while plate in used_plates:
                     plate = self._generate_plate()
@@ -117,7 +120,7 @@ class DatabaseManager:
                 
                 cars_data.append((
                     plate,
-                    None,  # Gambar (BLOB) is set to None
+                    img,  # Gambar (BLOB) is set to None
                     f"{brand} {random.choice(models)}",
                     random.choice(colors),
                     random.choice(years),
