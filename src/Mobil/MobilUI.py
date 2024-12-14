@@ -1,12 +1,17 @@
 from PyQt5.QtWidgets import QGridLayout, QPushButton, QComboBox, QHBoxLayout, QVBoxLayout, QLabel, QWidget
 from PyQt5.QtGui import QFont, QPixmap, QIcon
 from PyQt5.QtCore import Qt
+from Mobil.MobilController import MobilController  # Use absolute import
+from Components.Card import CarCard  # Use absolute import
 
 class MobilUI(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("MobilUI")
         self.setGeometry(100, 100, 800, 600)
+        
+        # Initialize MobilController
+        self.controller = MobilController(schema_path="src/schema.sql")
         
         # Main container widget
         main_layout = QVBoxLayout(self)
@@ -32,11 +37,13 @@ class MobilUI(QWidget):
         add_button = QPushButton()
         add_button.setIcon(QIcon("./src/Component/AddIcon.png"))
         add_button.setStyleSheet("border: none;")
+        add_button.clicked.connect(self.add_mobil)
         top_bar.addWidget(add_button)
 
         delete_button = QPushButton()
         delete_button.setIcon(QIcon("./src/Component/DeleteIcon.png"))
         delete_button.setStyleSheet("border: none;")
+        delete_button.clicked.connect(self.delete_mobil)
         top_bar.addWidget(delete_button)
 
         main_layout.addLayout(top_bar)
@@ -45,18 +52,8 @@ class MobilUI(QWidget):
         self.grid_layout = QGridLayout()
         main_layout.addLayout(self.grid_layout)
 
-        # Add cars to grid layout
-        cars = [
-            ("./src/Component/car1.jpg", "Porsche 911 GT3", "Putih", "KT 1 A", 2021, "./src/Component/GreenCheckIcon.png"),
-            ("./src/Component/car2.jpg", "Pagani Huayra", "Biru", "D 1120 HX", 2021, "./src/Component/RedCrossIcon.png"),
-            ("./src/Component/car3.jpg", "Esemka", "Hitam", "J 2024 OWI", 2045, "./src/Component/GreenCheckIcon.png"),
-            ("./src/Component/car4.jpg", "Avanza 2005", "Cream", "D 1715 HN", 2021, "./src/Component/GreenCheckIcon.png"),
-            ("./src/Component/car1.jpg", "MV3 Garuda", "Putih", "RI 1", 2024, "./src/Component/GreenCheckIcon.png"),
-        ]
-
-        for i, car in enumerate(cars):
-            card = self.create_card(*car)
-            self.grid_layout.addWidget(card, i // 3, i % 3)
+        # Load cars from database
+        self.load_cars()
 
         # Pagination
         pagination_layout = QHBoxLayout()
@@ -64,75 +61,61 @@ class MobilUI(QWidget):
 
         prev_button = QPushButton("<")
         prev_button.setStyleSheet("border: none; font-size: 16px;")
+        prev_button.clicked.connect(self.prev_page)
         pagination_layout.addWidget(prev_button)
 
         for i in range(1, 5):
             page_button = QPushButton(str(i))
             page_button.setStyleSheet("border: none; font-size: 16px;")
+            page_button.clicked.connect(lambda _, page=i: self.go_to_page(page))
             pagination_layout.addWidget(page_button)
 
         next_button = QPushButton(">")
         next_button.setStyleSheet("border: none; font-size: 16px;")
+        next_button.clicked.connect(self.next_page)
         pagination_layout.addWidget(next_button)
 
         pagination_layout.addStretch()
         main_layout.addLayout(pagination_layout)
 
-    def create_card(self, image_path, title, color, license_plate, year, status_icon):
-        """Create a single card for a car."""
-        card_widget = QWidget()
-        card_widget.setStyleSheet("""
-            QWidget {
-                background-color: #FFFFFF;
-                border-radius: 15px;
-                border: 1px solid #E0E0E0;
-                padding: 10px;
-            }
-        """)
+    def load_cars(self, page=1):
+        """Load cars from the database and display them."""
+        self.grid_layout.setParent(None)
+        self.grid_layout = QGridLayout()
+        self.layout().addLayout(self.grid_layout)
 
-        # Main layout of the card
-        layout = QVBoxLayout(card_widget)
+        cars = self.controller.list_mobil(limit=6, offset=(page-1)*6)
+        for i, car in enumerate(cars):
+            card = CarCard(
+                car.gambar,
+                car.model,
+                car.warna,
+                car.nomor_plat,
+                car.tahun,
+                car.status_ketersediaan
+            )
+            self.grid_layout.addWidget(card, i // 3, i % 3)
 
-        # Car image
-        car_image = QLabel()
-        pixmap = QPixmap(image_path).scaled(150, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        car_image.setPixmap(pixmap)
-        car_image.setAlignment(Qt.AlignCenter)
-        layout.addWidget(car_image)
+    def add_mobil(self):
+        """Add a new Mobil."""
+        # Implement the logic to add a new Mobil
+        pass
 
-        # Car information
-        title_label = QLabel(title)
-        title_label.setFont(QFont("Poly", 14, QFont.Bold))
-        title_label.setAlignment(Qt.AlignLeft)
+    def delete_mobil(self):
+        """Delete a selected Mobil."""
+        # Implement the logic to delete a selected Mobil
+        pass
 
-        color_label = QLabel(color)
-        color_label.setFont(QFont("Poly", 12))
+    def prev_page(self):
+        """Go to the previous page."""
+        # Implement the logic to go to the previous page
+        pass
 
-        license_label = QLabel(license_plate)
-        license_label.setFont(QFont("Poly", 12))
+    def next_page(self):
+        """Go to the next page."""
+        # Implement the logic to go to the next page
+        pass
 
-        year_label = QLabel(str(year))
-        year_label.setFont(QFont("Poly", 12))
-        year_label.setAlignment(Qt.AlignRight)
-
-        # Info layout
-        info_layout = QVBoxLayout()
-        info_layout.addWidget(title_label)
-        info_layout.addWidget(color_label)
-        info_layout.addWidget(license_label)
-
-        # Bottom row with year and status
-        bottom_layout = QHBoxLayout()
-        bottom_layout.addLayout(info_layout)
-        bottom_layout.addStretch()
-        bottom_layout.addWidget(year_label)
-
-        # Add status icon
-        status_label = QLabel()
-        status_pixmap = QPixmap(status_icon).scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        status_label.setPixmap(status_pixmap)
-        bottom_layout.addWidget(status_label)
-
-        layout.addLayout(bottom_layout)
-
-        return card_widget
+    def go_to_page(self, page):
+        """Go to a specific page."""
+        self.load_cars(page)

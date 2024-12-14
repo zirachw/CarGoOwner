@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
 import sqlite3
 
-class HistoriPEminjamanController(QWidget):
+class HistoriPeminjamanController(QWidget):
     def __init__(self, schema_path, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
@@ -18,7 +18,7 @@ class HistoriPEminjamanController(QWidget):
         # Store important paths for database access
         self.schema_path = schema_path
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPelanggan.db")
+        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPeminjaman.db")
         
         # Initialize pagination variables
         self.current_page = 1
@@ -72,19 +72,18 @@ class HistoriPEminjamanController(QWidget):
         self.table = QTableWidget()
         self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels([
-            "", "NIK", "Nama", "Kontak", "Alamat", "Credit Point", "Status", "Aksi"
+            "ID", "Plat", "NIK", "Nama", "Kontak", "Tanggal Peminjaman", "Tanggal Pengembalian", "Tenggat Pengembalian"
         ])
         
-        # Define column percentages (total should be 100)
         column_percentages = {
             0: 5,     # Checkbox
             1: 15,    # NIK
             2: 15,    # Nama
             3: 12,    # Kontak
-            4: 25,    # Alamat
-            5: 10,    # Credit Point
+            4: 15,    # Alamat
+            5: 12,    # Credit Point
             6: 12,    # Status
-            7: 6      # Aksi
+            7: 14      # Aksi
         }
         
         # Calculate and set column widths based on available width
@@ -190,7 +189,7 @@ class HistoriPEminjamanController(QWidget):
         # Calculate total pages
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM Pelanggan')
+        cursor.execute('SELECT COUNT(*) FROM (SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan FROM Mobil)')
         total_records = cursor.fetchone()[0]
         self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
         conn.close()
@@ -328,87 +327,50 @@ class HistoriPEminjamanController(QWidget):
             
             # Create the Pelanggan table with proper column order
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Pelanggan (
-                    NIK TEXT PRIMARY KEY,
-                    Nama TEXT,
-                    Kontak TEXT,
-                    Alamat TEXT,
-                    CreditPoint INTEGER,
-                    StatusPinjam BOOLEAN
+                CREATE TABLE IF NOT EXISTS Mobil (
+                    NomorPlat TEXT PRIMARY KEY,
+                    Model TEXT,
+                    Warna TEXT,
+                    Tahun INTEGER,
+                    StatusKetersediaan BOOLEAN
                 )
             ''')
             
             # Check if table is empty and needs sample data
-            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
+            cursor.execute('SELECT COUNT(*) FROM (SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan FROM Mobil)')
             if cursor.fetchone()[0] == 0:
                 # Prepare sample data with 60 varied entries
                 sample_data = [
-                    ('3602041211870001', 'Fariz Rifqi', '08554677321', 'Puri Indah', 100, 1),
-                    ('3602041211870002', 'Razi Rachman', '08126016657', 'Pondok Furqon Sekeloa', 100, 0),
-                    ('3602041211870003', 'Ahmad Dharma', '08139876543', 'Jl. Sukajadi No. 45', 75, 1),
-                    ('3602041211870004', 'Siti Nurhaliza', '08567890123', 'Komplek Permata Blok A2', 90, 0),
-                    ('3602041211870005', 'Budi Santoso', '08234567890', 'Jl. Dipatiukur No. 23', 100, 1),
-                    ('3602041211870006', 'Diana Putri', '08198765432', 'Apartemen Sudirman Lt. 5', 85, 0),
-                    ('3602041211870007', 'Eko Prasetyo', '08521234567', 'Jl. Buah Batu No. 78', 95, 1),
-                    ('3602041211870008', 'Fitri Handayani', '08234567891', 'Komplek Cijagra Indah B5', 80, 0),
-                    ('3602041211870009', 'Gunawan Wibowo', '08187654321', 'Jl. Dago No. 145', 100, 1),
-                    ('3602041211870010', 'Hana Safira', '08561234567', 'Perumahan Antapani Blok F7', 70, 0),
-                    ('3602041211870011', 'Irfan Hakim', '08129876543', 'Jl. Setiabudi No. 67', 90, 1),
-                    ('3602041211870012', 'Julia Perez', '08234567892', 'Apartemen Gateway Lt. 12', 100, 0),
-                    ('3602041211870013', 'Kevin Sanjaya', '08198765433', 'Jl. Ir. H. Juanda No. 34', 85, 1),
-                    ('3602041211870014', 'Linda Maharani', '08561234568', 'Komplek Ciumbuleuit B23', 95, 0),
-                    ('3602041211870015', 'Muhammad Rizky', '08234567893', 'Jl. Tubagus Ismail No. 56', 75, 1),
-                    ('3602041211870016', 'Nadia Safitri', '08187654322', 'Perumahan Bumi Asri C12', 100, 0),
-                    ('3602041211870017', 'Oscar Prawira', '08521234568', 'Jl. Pasir Kaliki No. 89', 90, 1),
-                    ('3602041211870018', 'Putri Rahayu', '08234567894', 'Komplek Metro Indah D4', 80, 0),
-                    ('3602041211870019', 'Qori Sandika', '08198765434', 'Jl. Cihampelas No. 234', 100, 1),
-                    ('3602041211870020', 'Rachel Amalia', '08561234569', 'Apartemen Jardin Lt. 8', 85, 0),
-                    ('3602041211870021', 'Surya Darma', '08234567895', 'Jl. Lengkong No. 45', 95, 1),
-                    ('3602041211870022', 'Tania Putri', '08187654323', 'Komplek Kopo Permai E15', 70, 0),
-                    ('3602041211870023', 'Umar Hidayat', '08521234569', 'Jl. Gatot Subroto No. 78', 100, 1),
-                    ('3602041211870024', 'Vina Muliani', '08234567896', 'Perumahan Cijerah Blok F9', 90, 0),
-                    ('3602041211870025', 'Wawan Setiawan', '08198765435', 'Jl. Soekarno Hatta No. 123', 85, 1),
-                    ('3602041211870026', 'Xena Putri', '08561234570', 'Komplek Margahayu A7', 95, 0),
-                    ('3602041211870027', 'Yudi Pratama', '08234567897', 'Jl. Asia Afrika No. 56', 75, 1),
-                    ('3602041211870028', 'Zahra Amira', '08187654324', 'Apartemen Sky Garden Lt. 15', 100, 0),
-                    ('3602041211870029', 'Adi Nugroho', '08521234570', 'Jl. Merdeka No. 89', 90, 1),
-                    ('3602041211870030', 'Bella Safitri', '08234567898', 'Komplek Batununggal C8', 80, 0),
-                    ('3602041211870031', 'Candra Wijaya', '08198765436', 'Jl. Riau No. 167', 100, 1),
-                    ('3602041211870032', 'Dina Maulida', '08561234571', 'Perumahan Ujung Berung D12', 85, 0),
-                    ('3602041211870033', 'Egi Pratama', '08234567899', 'Jl. Pahlawan No. 45', 95, 1),
-                    ('3602041211870034', 'Fanny Oktavia', '08187654325', 'Komplek Antapani Indah B6', 70, 0),
-                    ('3602041211870035', 'Galih Dermawan', '08521234571', 'Jl. Dipati Ukur No. 234', 100, 1),
-                    ('3602041211870036', 'Hesti Putri', '08234567900', 'Apartemen Green Palace Lt. 10', 90, 0),
-                    ('3602041211870037', 'Indra Lesmana', '08198765437', 'Jl. Braga No. 78', 85, 1),
-                    ('3602041211870038', 'Jasmine Ayu', '08561234572', 'Komplek Sarijadi C15', 95, 0),
-                    ('3602041211870039', 'Kiki Firmansyah', '08234567901', 'Jl. Pasteur No. 56', 75, 1),
-                    ('3602041211870040', 'Laras Wati', '08187654326', 'Perumahan Cibiru Blok E7', 100, 0),
-                    ('3602041211870041', 'Maman Abdurahman', '08521234572', 'Jl. Surya Sumantri No. 89', 90, 1),
-                    ('3602041211870042', 'Nining Septiani', '08234567902', 'Komplek Geger Kalong D4', 80, 0),
-                    ('3602041211870043', 'Opik Taupik', '08198765438', 'Jl. Siliwangi No. 123', 100, 1),
-                    ('3602041211870044', 'Putri Candrawati', '08561234573', 'Apartemen Metro Lt. 7', 85, 0),
-                    ('3602041211870045', 'Rizal Fahmi', '08234567903', 'Jl. Terusan Jakarta No. 45', 95, 1),
-                    ('3602041211870046', 'Siska Dewi', '08187654327', 'Komplek Cicaheum B8', 70, 0),
-                    ('3602041211870047', 'Taufik Hidayat', '08521234573', 'Jl. Ahmad Yani No. 78', 100, 1),
-                    ('3602041211870048', 'Ulfah Rahmawati', '08234567904', 'Perumahan Ciwastra C12', 90, 0),
-                    ('3602041211870049', 'Vicky Prasetyo', '08198765439', 'Jl. Veteran No. 167', 85, 1),
-                    ('3602041211870050', 'Winda Kartika', '08561234574', 'Komplek Cijerah Indah A7', 95, 0),
-                    ('3602041211870051', 'Yanto Sudrajat', '08234567905', 'Jl. Sunda No. 56', 75, 1),
-                    ('3602041211870052', 'Zaskia Gotik', '08187654328', 'Apartemen City View Lt. 9', 100, 0),
-                    ('3602041211870053', 'Asep Sunandar', '08521234574', 'Jl. Astana Anyar No. 89', 90, 1),
-                    ('3602041211870054', 'Bunga Citra', '08234567906', 'Komplek Margacinta E15', 80, 0),
-                    ('3602041211870055', 'Cecep Reza', '08198765440', 'Jl. Pajajaran No. 234', 100, 1),
-                    ('3602041211870056', 'Desi Ratnasari', '08561234575', 'Perumahan Arcamanik D12', 85, 0),
-                    ('3602041211870057', 'Eman Sulaeman', '08234567907', 'Jl. Pasirkoja No. 45', 95, 1),
-                    ('3602041211870058', 'Fitriani Zahra', '08187654329', 'Komplek Soekarno Hatta B6', 70, 0),
-                    ('3602041211870059', 'Gilang Dirga', '08521234575', 'Jl. Kiaracondong No. 78', 100, 1),
-                    ('3602041211870060', 'Hani Soraya', '08234567908', 'Apartemen Park View Lt. 11', 90, 0),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
                 ]
                 
                 # Insert all sample data
                 cursor.executemany('''
-                    INSERT INTO Pelanggan (NIK, Nama, Kontak, Alamat, CreditPoint, StatusPinjam)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO Mobil (NomorPlat, Model, Warna, Tahun, StatusKetersediaan)
+                    VALUES (?, ?, ?, ?, ?)
                 ''', sample_data)
                 
             # Commit changes and ensure they're saved
@@ -431,7 +393,8 @@ class HistoriPEminjamanController(QWidget):
             # Calculate offset based on current page
             offset = (self.current_page - 1) * self.items_per_page
             cursor.execute(f'''
-                SELECT * FROM Pelanggan 
+                SELECT ID, NomorPlat, NIK, Nama, Kontak, TanggalPeminjaman, TanggalPengembalian, TenggatPengembalian
+                FROM Peminjaman
                 LIMIT {self.items_per_page} 
                 OFFSET {offset}
             ''')
@@ -439,27 +402,14 @@ class HistoriPEminjamanController(QWidget):
             
             # Set up table rows
             self.table.setRowCount(len(data))
-            for row, record in enumerate(data):
-                # Add checkbox
-                checkbox = QCheckBox()
-                checkbox_container = QWidget()
-                checkbox_layout = QHBoxLayout(checkbox_container)
-                checkbox_layout.setContentsMargins(16, 16, 16, 16)
-                checkbox_layout.addWidget(checkbox, alignment=Qt.AlignCenter)
-                self.table.setCellWidget(row, 0, checkbox_container)
-                
+            print(data)
+            for row, record in enumerate(data):                
                 # Add data cells
                 for col, value in enumerate(record):
-                    if col == 5:  # Status column
-                        self.create_status_cell(row, col + 1, value == 1)
-                    else:
-                        item = QTableWidgetItem(str(value))
-                        item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-                        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                        self.table.setItem(row, col + 1, item)
-                
-                # Add action button
-                self.create_action_cell(row)
+                    item = QTableWidgetItem(str(value))
+                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                    item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                    self.table.setItem(row, col, item)
                 
                 # Set row height
                 self.table.setRowHeight(row, 72)
@@ -497,30 +447,6 @@ class HistoriPEminjamanController(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.addWidget(status_btn, alignment=Qt.AlignCenter)
         self.table.setCellWidget(row, col, container)
-
-    def create_action_cell(self, row):
-        """Create a styled action cell with an edit button for each customer row."""
-        action_btn = QPushButton("✎")
-        action_btn.setStyleSheet("""
-            QPushButton {
-                border: none;
-                color: #6B7280;
-                font-size: 16px;
-                font-family: 'Poly', sans-serif;
-            }
-            QPushButton:hover {
-                color: #374151;
-            }
-        """)
-        
-        container = QWidget()
-        layout = QHBoxLayout(container)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.addWidget(action_btn, alignment=Qt.AlignCenter)
-        self.table.setCellWidget(row, 7, container)
-        
-        # Connect the button to edit handler
-        action_btn.clicked.connect(lambda: self.handle_edit(row))
 
     def handle_edit(self, row):
         """Handle the edit action when a customer's edit button is clicked."""
