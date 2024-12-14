@@ -4,7 +4,7 @@ from PyQt5.QtGui import QFont, QIcon, QFontDatabase, QPixmap
 from PyQt5.QtCore import Qt
 from Mobil.MobilUI import MobilUI
 from Peminjaman.peminjamanUI import PeminjamanUI
-from Pelanggan.PelangganController import PelangganController
+from Pelanggan.MenuPelanggan import PelangganController
 from Notifikasi.NotifikasiController import JadwalPengembalian, PembayaranRental
 from Laporan.HistoriPeminjaman import HistoriPeminjamanController
 from Laporan.Pendapatan import PendapatanController
