@@ -2,9 +2,9 @@ import sys
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWindow, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QWidget, QHBoxLayout, QStackedWidget, QPushButton, QDesktopWidget
 from PyQt5.QtGui import QFont, QIcon, QFontDatabase, QPixmap
 from PyQt5.QtCore import Qt
-from Mobil.MobilUI import MobilUI
-from Peminjaman.peminjamanUI import PeminjamanUI
-from Pelanggan.MenuPelanggan import PelangganController
+from Mobil.MobilController import MobilController
+from Peminjaman.peminjamanController import PeminjamanController
+from Pelanggan.PelangganController import PelangganController
 from Notifikasi.NotifikasiController import JadwalPengembalian, PembayaranRental
 from Laporan.HistoriPeminjaman import HistoriPeminjamanController
 from Laporan.Pendapatan import PendapatanController
@@ -36,7 +36,7 @@ class MenuUI(QMainWindow):
         self.stackedWidget = QStackedWidget()
         # Initialize all UI components
         self.menu = self.MainUI()
-        self.mobil = MobilUI()
+        self.mobil = MobilController()
         # Panggil Peminjaman UI
         self.peminjaman = PeminjamanUI()
         self.pelanggan = PelangganController(schema_path="src/schema.sql")
