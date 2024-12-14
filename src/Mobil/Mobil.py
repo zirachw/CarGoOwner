@@ -15,56 +15,13 @@ class Mobil:
     Model: str
     Warna: str
     Tahun: int
-    Status: bool
+    Status: int
     
     def __init__(self):
         """Initialize database connection and setup"""
         self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
         self.schema_path = Path(__file__).parent.parent / "schema.sql"
-        self.init_database()
-
-    def init_database(self):
-        """Initialize the database with required tables and sample data."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
             
-            # Drop the existing Mobil table if it exists
-            cursor.execute('DROP TABLE IF EXISTS Mobil')
-
-            # Create the Mobil table with proper schema
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Mobil (
-                    NomorPlat TEXT PRIMARY KEY,
-                    Gambar BLOB,
-                    Model TEXT NOT NULL,
-                    Warna TEXT,
-                    Tahun INTEGER NOT NULL,
-                    StatusKetersediaan INTEGER NOT NULL CHECK (StatusKetersediaan IN (0, 1))  
-                )
-            ''')
-            
-            # Check if table needs sample data
-            cursor.execute('SELECT COUNT(*) FROM Mobil')
-            if cursor.fetchone()[0] == 0:
-                # Insert sample customer data (sample_data list from original code)
-                sample_data = [
-                    # Add sample data here
-                ]
-                
-                cursor.executemany('''
-                    INSERT INTO Mobil (NomorPlat, Gambar, Model, Warna, Tahun, StatusKetersediaan)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', sample_data)
-                
-            conn.commit()
-            
-        except sqlite3.Error as e:
-            print(f"Database initialization error: {e}")
-        finally:
-            if conn:
-                conn.close()
-
     def get_mobil(self, page: int, items_per_page: int) -> Tuple[List[Dict[str, Any]], int]:
         """
         Retrieve paginated customer data from the database.
@@ -90,6 +47,58 @@ class Mobil:
                 SELECT * FROM Mobil 
                 LIMIT ? OFFSET ?
             ''', (items_per_page, offset))
+            
+            # Convert to list of dictionaries
+            columns = ['NomorPlat', 'Gambar', 'Model', 'Warna', 'Tahun', 'StatusKetersediaan']
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            return data, total_records
+            
+        except sqlite3.Error as e:
+            raise Exception(f"Error retrieving customer data: {str(e)}")
+        finally:
+            if conn:
+                conn.close()
+
+    def get_mobil_filtered(self, page: int, items_per_page: int, year: int = None, color: str = None) -> Tuple[List[Dict[str, Any]], int]:
+        """
+        Retrieve paginated customer data from the database with optional filters for year and color.
+        
+        Args:
+            page: Current page number
+            items_per_page: Number of items per page
+            year: Optional filter for the year
+            color: Optional filter for the color
+            
+        Returns:
+            Tuple containing list of customer data and total number of records
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Build the query with optional filters
+            query = 'SELECT * FROM Mobil WHERE 1=1'
+            params = []
+            
+            if year is not None:
+                query += ' AND Tahun = ?'
+                params.append(year)
+                
+            if color is not None:
+                query += ' AND Warna = ?'
+                params.append(color)
+                
+            # Get total count with filters
+            count_query = f'SELECT COUNT(*) FROM ({query})'
+            cursor.execute(count_query, params)
+            total_records = cursor.fetchone()[0]
+            
+            # Add pagination to the query
+            query += ' LIMIT ? OFFSET ?'
+            params.extend([items_per_page, (page - 1) * items_per_page])
+            
+            cursor.execute(query, params)
             
             # Convert to list of dictionaries
             columns = ['NomorPlat', 'Gambar', 'Model', 'Warna', 'Tahun', 'StatusKetersediaan']

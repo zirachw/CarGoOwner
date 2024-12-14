@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QGridLayout, QPushButton, QComboBox, QHBoxLayout, QVBoxLayout, QLabel, QWidget, QGraphicsDropShadowEffect, QCheckBox, QMessageBox, QDialog
-from PyQt5.QtGui import QFont, QPixmap, QPainter, QBrush
+from PyQt5.QtGui import QFont, QPixmap, QPainter, QBrush, QIcon
 from PyQt5.QtCore import Qt, QSize, QRect
 from Mobil.MobilUI import MobilUI  # Ensure correct import
 from Mobil.Mobil import Mobil  # Ensure correct import
@@ -77,13 +77,14 @@ class MobilController(QWidget):
         main_layout.addLayout(self.grid_layout)
 
         # Load cars from database
-        self.showMobil()
 
         # Pagination and bottom controls
         bottom_layout = self.setup_bottom_controls()
         bottom_widget = QWidget()
         bottom_widget.setLayout(bottom_layout)
         main_layout.addWidget(bottom_widget)  # Use addWidget instead of addLayout
+        
+        self.showMobil()
 
     def create_card(self, image_data, title, color, license_plate, year, status_icon):
         """Create a card widget."""
@@ -130,36 +131,32 @@ class MobilController(QWidget):
         car_image.setFixedSize(345, 200)  # Ensure the image fills the label
         layout.addWidget(car_image)
 
-        # Edit button
-        edit_button = QPushButton("Edit")
-        edit_button.setStyleSheet("""
-            QPushButton {
-                background-color: #10B981;
-                border: none;
-                color: white;
-                font-size: 14px;
-                padding: 5px 10px;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #059669;
-            }
-        """)
-        edit_button.setFixedSize(60, 30)
-        edit_button.setParent(card_widget)
-        edit_button.move(card_widget.width() - edit_button.width() - 10, 10)
-
+        # Car information layout
+        info_layout = QHBoxLayout()
+        
         # Checkbox
-        checkbox = QCheckBox()
-        checkbox.setParent(card_widget)
-        checkbox.move(10, 10)
-
-        # Car information
-        title_label = QLabel(title)
+        title_label = QLabel(title if len(title) < 20 else title[:20] + "...")
         title_label.setFont(QFont("Poly", 17, QFont.Bold))
         title_label.setAlignment(Qt.AlignLeft)
+        title_label.setFixedWidth(300)
         title_label.setWordWrap(True)
-        layout.addWidget(title_label)
+        info_layout.addWidget(title_label)
+
+
+        checkbox = QCheckBox()
+        info_layout.addWidget(checkbox)
+        
+        # Title label
+        
+        # Edit button
+        edit_button = QPushButton()
+        edit_button.setIcon(QIcon("./src/Component/editButton.png"))
+        edit_button.setIconSize(QSize(41, 41))
+        edit_button.clicked.connect(lambda: MobilUI.formMobil(self, mode="edit", mobil_data={'NomorPlat': license_plate, 'Gambar': '', 'Model': title, 'Warna': color, 'Tahun': year, 'StatusKetersediaan': status_icon}))
+        info_layout.addWidget(edit_button)
+        
+        info_layout.addStretch()
+        layout.addLayout(info_layout)
 
         color_label = QLabel(color)
         color_label.setFont(QFont("Poly", 14))
@@ -168,6 +165,7 @@ class MobilController(QWidget):
 
         license_label = QLabel(license_plate)
         license_label.setFont(QFont("Poly", 14))
+        license_label.setObjectName("plate")
         license_label.setWordWrap(True)
         license_label.setAlignment(Qt.AlignLeft)
 
@@ -222,8 +220,7 @@ class MobilController(QWidget):
             except ValueError:
                 year = None
 
-        cars, total_records = self.mobil.get_mobil(page, self.items_per_page)
-        
+        cars, total_records = self.mobil.get_mobil_filtered(page, self.items_per_page, year, color)
         if not cars:
             # Show message if no cars are available
             no_data_label = QLabel("Data Mobil tidak ada saat ini")
@@ -246,6 +243,7 @@ class MobilController(QWidget):
             else:
                 # Create an empty widget for empty slots
                 card = QWidget()
+                card.setFixedSize(360, 340)  
             self.grid_layout.addWidget(card, i // 3, i % 3)
 
         self.setup_pagination(total_records)
@@ -264,7 +262,6 @@ class MobilController(QWidget):
 
         # Calculate total pages
         self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
-        
         # Style for all pagination buttons
         button_style = """
             QPushButton {
@@ -327,7 +324,7 @@ class MobilController(QWidget):
                 btn.setProperty("current", "true")
                 btn.setStyleSheet(button_style + "font-weight: bold;")
             btn.setProperty("page_number", page)
-            btn.clicked.connect(lambda checked, p=page: self.go_to_page(p))
+            btn.clicked.connect(lambda checked, p=page: self.go_to_page(page))
             self.pagination_buttons.append(btn)
             pagination_layout.addWidget(btn)
         
@@ -426,8 +423,9 @@ class MobilController(QWidget):
             if widget is not None:
                 checkbox = widget.findChild(QCheckBox)
                 if checkbox and checkbox.isChecked():
-                    label = widget.findChild(QLabel, "license_label")
+                    label = widget.findChild(QLabel, "plate")
                     if label:
+                        print(True)
                         selected_ids.append(label.text())
         return selected_ids
 

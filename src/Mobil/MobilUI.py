@@ -363,7 +363,7 @@ class MobilUI(QWidget):
         icon_label.setText("👥")
         
         # Add title and close button
-        title = QLabel("Hapus Pelanggan")
+        title = QLabel("Hapus Mobil")
         close_btn = QPushButton("×")
         close_btn.clicked.connect(dialog.reject)
         
@@ -405,7 +405,7 @@ class MobilUI(QWidget):
         content_layout.addLayout(header_layout)
         
         # Warning message
-        warning_label = QLabel(f"Aksi ini akan menghapus {count} pelanggan")
+        warning_label = QLabel(f"Aksi ini akan menghapus {count} mobil")
         warning_label.setStyleSheet("""
             QLabel {
                 color: #EF4444;
