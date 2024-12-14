@@ -447,6 +447,7 @@ class PelangganController(QWidget):
 
     def setup_main_layout(self):
         """Initialize the main layout structure."""
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
