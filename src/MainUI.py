@@ -7,9 +7,9 @@ from Peminjaman.peminjamanUI import PeminjamanUI
 from Pelanggan.MenuPelanggan import PelangganController
 from Notifikasi.NotifikasiUI import PengembalianUI, PembayaranUI
 from Notifikasi.NotifikasiController import NotifikasiController
-from Laporan.HistoriPeminjaman import HistoriPeminjamanController
-from Laporan.Pendapatan import PendapatanController
-from Laporan.StatusKetersediaan import StatusKetersediaanController
+from Laporan.HistoriPeminjaman import HistoriPeminjamanUI
+from Laporan.Pendapatan import PendapatanUI
+from Laporan.StatusKetersediaan import StatusKetersediaanUI
 
 class MenuUI(QMainWindow):
     def __init__(self):
@@ -44,9 +44,9 @@ class MenuUI(QMainWindow):
         # Panggil Pelanggan UI
         self.jadwalpengembalian = PengembalianUI()
         self.pembayaranrental = PembayaranUI()
-        self.historipeminjamanmobil = HistoriPeminjamanController()
-        self.statusketersediaanmobil = StatusKetersediaanController()
-        self.pendapatan = PendapatanController()
+        self.historipeminjamanmobil = HistoriPeminjamanUI()
+        self.statusketersediaanmobil = StatusKetersediaanUI()
+        self.pendapatan = PendapatanUI()
         self.clicknotif = NotifikasiController()
 
         # Add widgets to stacked widget

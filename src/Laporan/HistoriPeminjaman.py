@@ -8,18 +8,16 @@ from PyQt5.QtGui import QFont, QColor, QIcon
 import sqlite3
 from pathlib import Path
 
-class HistoriPeminjamanController(QWidget):
+class HistoriPeminjamanUI(QWidget):
     def __init__(self, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
-
-        self.ui = HistoriPeminjamanUI()
         
         # Initialize screen dimensions and layout calculations
-        self.ui.setup_window_geometry()
-        self.available_width = self.ui.available_width
-        self.screen_width = self.ui.screen_width
-        self.screen_height = self.ui.screen_height
+        self.ShowLaporanPeminjamanUI()
+        self.available_width = self.available_width
+        self.screen_width = self.screen_width
+        self.screen_height = self.screen_height
         
         # Store important paths for database access
         self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
@@ -35,14 +33,24 @@ class HistoriPeminjamanController(QWidget):
         self.next_button = None
         self.last_button = None
         
-        # Initialize database before setting up UI
-        self.init_database()
-        
         # Create main layout with proper spacing
         self.setup_main_layout()
         
         # Load the initial data
         self.load_data()
+
+    def ShowLaporanPeminjamanUI(self):
+        """Set up the window geometry based on screen dimensions."""
+        # Get screen dimensions
+        screen = QDesktopWidget().screenGeometry()
+        self.setGeometry(0, 0, screen.width(), screen.height())
+        
+        # Calculate available width (total width minus 25% for sidebar)
+        self.available_width = screen.width() - (screen.width() * 0.25) 
+        
+        # Store dimensions for later use
+        self.screen_width = screen.width()
+        self.screen_height = screen.height()
 
     def setup_main_layout(self):
         """Set up the main layout with proper spacing and margins."""
@@ -71,13 +79,13 @@ class HistoriPeminjamanController(QWidget):
         
         column_percentages = {
             0: 5,     # Checkbox
-            1: 15,    # NIK
+            1: 10,    # NIK
             2: 15,    # Nama
             3: 12,    # Kontak
-            4: 15,    # Alamat
-            5: 12,    # Credit Point
-            6: 12,    # Status
-            7: 14      # Aksi
+            4: 10,    # Alamat
+            5: 16,    # Credit Point
+            6: 16,    # Status
+            7: 16      # Aksi
         }
         
         # Calculate and set column widths based on available width
@@ -144,10 +152,9 @@ class HistoriPeminjamanController(QWidget):
             cursor = conn.cursor()
             cursor.execute("SELECT DISTINCT strftime('%m' ,TanggalPeminjaman) AS bulan FROM Peminjaman")
             months = cursor.fetchall()
-
             month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt','Nov','Dec']
-            print("ok")
-            print([month[0] for month in months])
+            if not months[0][0]:
+                return []
             return [month_names[int(month[0]) - 1] for month in months]
             
         except sqlite3.Error as e:
@@ -178,7 +185,6 @@ class HistoriPeminjamanController(QWidget):
                 background-color: #e8e8e8;
             }
         """)
-        select_all_btn.clicked.connect(self.toggle_select_all)
         
         # Set up pagination
         pagination_container = self.setup_pagination()
@@ -200,9 +206,6 @@ class HistoriPeminjamanController(QWidget):
                     background-color: {('#059669' if btn == add_button else '#DC2626')};
                 }}
             """)
-        
-        # Connect delete button to handler
-        delete_button.clicked.connect(self.handle_delete_selected)
         
 
         bottom_layout.addStretch()
@@ -233,7 +236,7 @@ class HistoriPeminjamanController(QWidget):
             QPushButton {
                 background: none;
                 border: none;
-                color: #374151;
+                color: #374151;init
                 font-family: 'Poly', sans-serif;
                 font-size: 14px;
                 padding: 8px;
@@ -352,72 +355,6 @@ class HistoriPeminjamanController(QWidget):
         if self.current_page < self.total_pages:
             self.go_to_page(self.current_page + 1)
 
-    def init_database(self):
-        """Initialize the database and create tables with sample customer data."""
-        try:
-            # Establish database connection
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Create the Pelanggan table with proper column order
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Mobil (
-                    NomorPlat TEXT PRIMARY KEY,
-                    Model TEXT,
-                    Warna TEXT,
-                    Tahun INTEGER,
-                    StatusKetersediaan BOOLEAN
-                )
-            ''')
-            
-            # Check if table is empty and needs sample data
-            cursor.execute('SELECT COUNT(*) FROM (SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan FROM Mobil)')
-            if cursor.fetchone()[0] == 0:
-                # Prepare sample data with 60 varied entries
-                sample_data = [
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                ]
-                
-                # Insert all sample data
-                cursor.executemany('''
-                    INSERT INTO Mobil (NomorPlat, Model, Warna, Tahun, StatusKetersediaan)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', sample_data)
-                
-            # Commit changes and ensure they're saved
-            conn.commit()
-            
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            
-        finally:
-            # Ensure connection is closed even if an error occurs
-            if conn:
-                conn.close()
-
     def load_data(self):
         """Load and display data from the database with pagination."""
         try:
@@ -448,13 +385,12 @@ class HistoriPeminjamanController(QWidget):
                     FROM Peminjaman
                     WHERE strftime('%m', TanggalPeminjaman) = ?
                     LIMIT {self.items_per_page} 
-                    OFFSET {offset}, (idx, )
-                ''')
+                    OFFSET {offset}
+                ''', (str(idx), ))
                 data = cursor.fetchall()               
             
             # Set up table rows
             self.table.setRowCount(len(data))
-            print(data)
             for row, record in enumerate(data):                
                 # Add data cells
                 for col, value in enumerate(record):
@@ -473,138 +409,7 @@ class HistoriPeminjamanController(QWidget):
             if conn:
                 conn.close()
 
-    def create_status_cell(self, row, col, is_pinjam):
-        """Create a styled status cell indicating whether a customer has borrowed items."""
-        status_text = "Pinjam" if is_pinjam else "Tidak Pinjam"
-        status_btn = QPushButton(status_text)
-        status_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {'#D1FAE5' if is_pinjam else '#FEE2E2'};
-                color: {'#10B981' if is_pinjam else '#EF4444'};
-                border: 1px solid {'#10B981' if is_pinjam else '#EF4444'};
-                border-radius: 10px;
-                padding-right: 12px;
-                padding-left: 12px;
-                min-height: 30px;
-                min-width: 100px;
-                font-family: 'Poly', sans-serif;
-                font-weight: 500;
-                font-size: 14px;
-                text-align: center;
-            }}
-        """)
-        
-        container = QWidget()
-        layout = QHBoxLayout(container)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.addWidget(status_btn, alignment=Qt.AlignCenter)
-        self.table.setCellWidget(row, col, container)
-
-    def handle_edit(self, row):
-        """Handle the edit action when a customer's edit button is clicked."""
-        # Get the NIK of the selected customer
-        nik_item = self.table.item(row, 1)
-        if nik_item:
-            nik = nik_item.text()
-            print(f"Editing customer with NIK: {nik}")
-            # TODO: Implement edit dialog functionality
-
-    def toggle_select_all(self, checked=None):
-        """Toggle selection state of all checkboxes in the table."""
-        # If checked is None, determine state based on first checkbox
-        if checked is None:
-            first_checkbox = self.get_checkbox(0)
-            if first_checkbox:
-                checked = not first_checkbox.isChecked()
-        
-        # Update all checkboxes
-        for row in range(self.table.rowCount()):
-            checkbox = self.get_checkbox(row)
-            if checkbox:
-                checkbox.setChecked(checked)
-
-    def get_checkbox(self, row):
-        """Helper method to get checkbox widget from a specific row."""
-        checkbox_container = self.table.cellWidget(row, 0)
-        if checkbox_container:
-            return checkbox_container.layout().itemAt(0).widget()
-        return None
-
-    def get_selected_rows(self):
-        """Get a list of indices for all selected rows."""
-        selected_rows = []
-        for row in range(self.table.rowCount()):
-            checkbox = self.get_checkbox(row)
-            if checkbox and checkbox.isChecked():
-                selected_rows.append(row)
-        return selected_rows
-
-    def handle_delete_selected(self):
-        """Delete all selected customers from the database."""
-        selected_rows = self.get_selected_rows()
-        if not selected_rows:
-            return
-
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            for row in selected_rows:
-                nik_item = self.table.item(row, 1)
-                if nik_item:
-                    nik = nik_item.text()
-                    cursor.execute('DELETE FROM Pelanggan WHERE NIK = ?', (nik,))
-            
-            conn.commit()
-            
-            # Recalculate total pages and adjust current page if needed
-            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
-            total_records = cursor.fetchone()[0]
-            new_total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
-            
-            # Adjust current page if it's now beyond the total pages
-            if self.current_page > new_total_pages:
-                self.current_page = max(1, new_total_pages)
-            
-            # Reload data and update pagination
-            self.load_data()
-            
-            # Recreate pagination controls
-            bottom_layout = self.findChild(QHBoxLayout)
-            if bottom_layout:
-                # Find and remove old pagination container
-                for i in range(bottom_layout.count()):
-                    item = bottom_layout.itemAt(i)
-                    if item and isinstance(item.widget(), QWidget):
-                        if isinstance(item.widget().layout(), QHBoxLayout):
-                            item.widget().deleteLater()
-                            break
-                
-                # Create and add new pagination container
-                new_pagination = self.setup_pagination()
-                bottom_layout.insertWidget(2, new_pagination)
-            
-        except sqlite3.Error as e:
-            print(f"Error deleting records: {e}")
-            
-        finally:
-            if conn:
-                conn.close()
-
     def apply_filters(self):
         """Apply filters based on the selected color and year."""
         self.load_data()
 
-class HistoriPeminjamanUI(QWidget):
-    def setup_window_geometry(self):
-        """Set up the window geometry based on screen dimensions."""
-        # Get screen dimensions
-        screen = QDesktopWidget().screenGeometry()
-        self.setGeometry(0, 0, screen.width(), screen.height())
-        
-        # Calculate available width (total width minus 25% for sidebar)
-        self.available_width = screen.width() - (screen.width() * 0.25) 
-        
-        # Store dimensions for later use
-        self.screen_width = screen.width()
-        self.screen_height = screen.height()

@@ -8,13 +8,13 @@ from PyQt5.QtGui import QFont, QColor, QIcon
 import sqlite3, locale
 from pathlib import Path
 
-class PendapatanController(QWidget):
+class PendapatanUI(QWidget):
     def __init__(self, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
 
         # Initialize screen dimensions and layout calculations
-        self.setup_window_geometry()
+        self.ShowLaporanPendapatanUI()
         
         # Store important paths for database access
         self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
@@ -29,13 +29,11 @@ class PendapatanController(QWidget):
         self.prev_button = None
         self.next_button = None
         self.last_button = None
-        
-        # Initialize database and UI
-        self.init_database()
+
         self.setup_main_layout()
         self.load_data()
 
-    def setup_window_geometry(self):
+    def ShowLaporanPendapatanUI(self):
         """Set up the window geometry based on screen dimensions."""
         screen = QDesktopWidget().screenGeometry()
         self.setGeometry(0, 0, screen.width(), screen.height())
@@ -59,7 +57,7 @@ class PendapatanController(QWidget):
         conn.close()
 
         # If no records, hide pagination and return empty container
-        self.message_error = QLabel("Tidak Data", self)
+        self.message_error = QLabel("Tidak ada Data", self)
         self.message_error.hide()
         if total_records == 0:
             self.message_error.setAlignment(Qt.AlignCenter)
@@ -83,7 +81,7 @@ class PendapatanController(QWidget):
         self.table = QTableWidget()
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
-            "ID", "Nama", "Tanggal Peminjaman", "Tanggal Pengembalian", "Tenggat Pengembalian", "Besar Pembayaran"
+            "ID", "Nama", "Tanggal Peminjaman", "Tanggal Pengembalian", "Tanggal Pembayaran", "Besar Pembayaran"
         ])
         
         column_percentages = {
@@ -159,25 +157,64 @@ class PendapatanController(QWidget):
     def setup_top_bar(self):
         top_bar = QHBoxLayout()
 
-        # locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
+        locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
 
-        # total = self.get_total_pembayaran()
-        # # formatted_number = locale.currency(total, grouping=True)
-        # # label = QLabel(f"Total Pembayaran: {formatted_number}")
+        total = self.get_total_pembayaran()
+        if not total :
+            total = 0
 
-        # label.setStyleSheet("""
-        #     background-color: #D3D3D3;   /* Warna abu-abu */
-        #     border-radius: 15px;         /* Sudut bundar */
-        #     padding: 10px;               /* Ruang di dalam label */
-        #     font-size: 14px;             /* Ukuran font */
-        #     font-family: 'Poly', sans-serif;
-        #     color: black;                /* Warna teks */
-        # """)
+        formatted_number = locale.currency(total, grouping=True)
+        label = QLabel(f"Total Pembayaran: {formatted_number}")
 
-        # top_bar.addWidget(label)
-        # top_bar.addStretch()
+        label.setStyleSheet("""
+            background-color: #D3D3D3;   /* Warna abu-abu */
+            border-radius: 15px;         /* Sudut bundar */
+            padding: 10px;               /* Ruang di dalam label */
+            font-size: 14px;             /* Ukuran font */
+            font-family: 'Poly', sans-serif;
+            color: black;                /* Warna teks */
+        """)
+
+        self.periode_dropdown = QComboBox()
+        self.periode_dropdown.setFont(QFont("Poly", 12))
+        self.periode_dropdown.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                padding-left: 20px;
+                border: 1px solid #D1D5DB;
+                border-radius: 5px;
+                background-color: #FFFFFF;
+            }
+        """)
+        self.periode_dropdown.addItem("All Periode")
+        self.periode_dropdown.addItems(self.get_unique_month())
+        self.periode_dropdown.currentIndexChanged.connect(self.apply_filters)
+
+        top_bar.addWidget(self.periode_dropdown)
+        top_bar.addSpacing(20)
+        top_bar.addWidget(label)
+        top_bar.addStretch()
 
         return top_bar
+
+    def get_unique_month(self):
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT strftime('%m' ,TanggalPembayaran) AS bulan FROM Peminjaman")
+            months = cursor.fetchall()
+            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt','Nov','Dec']
+            if not months[0][0]:
+                return []
+            return [month_names[int(month[0]) - 1] for month in months]
+            
+        except sqlite3.Error as e:
+            print(f"Error getting unique month: {e}")
+            return []
+            
+        finally:
+            if conn:
+                conn.close()
 
     def setup_pagination(self):
         """Set up pagination with a fixed window of 5 pages plus First/Last buttons."""
@@ -324,101 +361,40 @@ class PendapatanController(QWidget):
         if self.current_page < self.total_pages:
             self.go_to_page(self.current_page + 1)
 
-    def init_database(self):
-        """Initialize the database and create tables with sample customer data."""
-        try:
-            # Establish database connection
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Create the Pelanggan table with proper column order
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Mobil (
-                    NomorPlat TEXT PRIMARY KEY,
-                    Model TEXT,
-                    Warna TEXT,
-                    Tahun INTEGER,
-                    StatusKetersediaan BOOLEAN
-                )
-            ''')
-            
-            # Check if table is empty and needs sample data
-            cursor.execute('SELECT COUNT(*) FROM (SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan FROM Mobil)')
-            if cursor.fetchone()[0] == 0:
-                # Prepare sample data with 60 varied entries
-                sample_data = [
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                ]
-                
-                # Insert all sample data
-                cursor.executemany('''
-                    INSERT INTO Mobil (NomorPlat, Model, Warna, Tahun, StatusKetersediaan)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', sample_data)
-                
-            # Commit changes and ensure they're saved
-            conn.commit()
-            
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            
-        finally:
-            # Ensure connection is closed even if an error occurs
-            if conn:
-                conn.close()
-
     def load_data(self):
         """Load and display data from the database with pagination."""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
-            # Calculate offset based on current page
+
+            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt','Nov','Dec']
+
+            month = self.periode_dropdown.currentText()
             offset = (self.current_page - 1) * self.items_per_page
-            cursor.execute(f'''
-                SELECT ID, Nama, TanggalPeminjaman, TanggalPengembalian, TenggatPengembalian, BesarPembayaran
-                FROM Peminjaman WHERE StatusPembayaran = 1
-                LIMIT {self.items_per_page} 
-                OFFSET {offset}
-            ''')
-            data = cursor.fetchall()
-            
-            # Set up table rows
-            self.table.setRowCount(len(data))
-            print(data)
-            for row, record in enumerate(data):                
-                # Add data cells
-                for col, value in enumerate(record):
-                    item = QTableWidgetItem(str(value))
-                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-                    item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                    self.table.setItem(row, col, item)
-                
-                # Set row height
-                self.table.setRowHeight(row, 72)
+
+            if month == 'All Periode' :
+                cursor.execute(f'''
+                    SELECT ID, Nama, TanggalPeminjaman, TanggalPengembalian, TanggalPembayaran, BesarPembayaran
+                    FROM Peminjaman WHERE StatusPembayaran = 1
+                    LIMIT {self.items_per_page} 
+                    OFFSET {offset}
+                ''')
+                data = cursor.fetchall()
+
+            else :
+                idx = 0
+                for i in range(12):
+                    if (month_names[i] == month):
+                        idx = i + 1
+
+                cursor.execute(f'''
+                    SELECT ID, Nama, TanggalPeminjaman, TanggalPengembalian, TanggalPembayaran, BesarPembayaran
+                    FROM Peminjaman 
+                    WHERE strftime('%m', TanggalPembayaran) = ?
+                    LIMIT {self.items_per_page} 
+                    OFFSET {offset}
+                ''', (str(idx), ))
+                data = cursor.fetchall()
             
         except sqlite3.Error as e:
             print(f"Error loading data: {e}")
@@ -426,4 +402,8 @@ class PendapatanController(QWidget):
         finally:
             if conn:
                 conn.close()
+
+    def apply_filters(self):
+        """Apply filters based on the selected color and year."""
+        self.load_data()
 
