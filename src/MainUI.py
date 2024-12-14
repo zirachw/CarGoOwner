@@ -5,10 +5,11 @@ from PyQt5.QtCore import Qt
 from Mobil.MobilController import MobilController
 from Peminjaman.peminjamanUI import PeminjamanUI
 from Pelanggan.MenuPelanggan import PelangganController
-from Notifikasi.NotifikasiController import JadwalPengembalian, PembayaranRental
-from Laporan.HistoriPeminjaman import HistoriPeminjamanController
-from Laporan.Pendapatan import PendapatanController
-from Laporan.StatusKetersediaan import StatusKetersediaanController
+from Notifikasi.NotifikasiUI import PengembalianUI, PembayaranUI
+from Notifikasi.NotifikasiController import NotifikasiController
+from Laporan.HistoriPeminjaman import HistoriPeminjamanUI
+from Laporan.Pendapatan import PendapatanUI
+from Laporan.StatusKetersediaan import StatusKetersediaanUI
 
 class MenuUI(QMainWindow):
     def __init__(self):
@@ -41,11 +42,12 @@ class MenuUI(QMainWindow):
         self.peminjaman = PeminjamanUI()
         self.pelanggan = PelangganController()
         # Panggil Pelanggan UI
-        self.jadwalpengembalian = JadwalPengembalian()
-        self.pembayaranrental = PembayaranRental()
-        self.historipeminjamanmobil = HistoriPeminjamanController()
-        self.statusketersediaanmobil = StatusKetersediaanController()
-        self.pendapatan = PendapatanController()
+        self.jadwalpengembalian = PengembalianUI()
+        self.pembayaranrental = PembayaranUI()
+        self.historipeminjamanmobil = HistoriPeminjamanUI()
+        self.statusketersediaanmobil = StatusKetersediaanUI()
+        self.pendapatan = PendapatanUI()
+        self.clicknotif = NotifikasiController()
 
         # Add widgets to stacked widget
         self.stackedWidget.addWidget(self.menu)
@@ -203,9 +205,11 @@ class MenuUI(QMainWindow):
         self.stackedWidget.setCurrentWidget(self.pelanggan)
   
     def onClickJadwalPengembalian(self):
+        self.clicknotif.clickedJadwalPengembalian()
         self.stackedWidget.setCurrentWidget(self.jadwalpengembalian)
 
     def onClickPembayaranRental(self):
+        self.clicknotif.clickedPembayaranRental()
         self.stackedWidget.setCurrentWidget(self.pembayaranrental)
   
     def onClickStatusKetersediaanMobil(self):

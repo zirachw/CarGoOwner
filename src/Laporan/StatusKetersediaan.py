@@ -8,13 +8,13 @@ from PyQt5.QtGui import QFont, QColor, QIcon
 import sqlite3
 from pathlib import Path
 
-class StatusKetersediaanController(QWidget):
+class StatusKetersediaanUI(QWidget):
     def __init__(self, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
-        
+
         # Initialize screen dimensions and layout calculations
-        self.setup_window_geometry()
+        self.ShowLaporanStatusPengembalian()
         
         # Store important paths for database access
         self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
@@ -39,7 +39,7 @@ class StatusKetersediaanController(QWidget):
         # Load the initial data
         self.load_data()
 
-    def setup_window_geometry(self):
+    def ShowLaporanStatusPengembalian(self):
         """Set up the window geometry based on screen dimensions."""
         # Get screen dimensions
         screen = QDesktopWidget().screenGeometry()
@@ -51,7 +51,7 @@ class StatusKetersediaanController(QWidget):
         # Store dimensions for later use
         self.screen_width = screen.width()
         self.screen_height = screen.height()
-
+    
     def setup_main_layout(self):
         """Set up the main layout with proper spacing and margins."""
         layout = QVBoxLayout(self)
@@ -100,14 +100,15 @@ class StatusKetersediaanController(QWidget):
                 background-color: #FFFFFF;
             }
         """)
-        self.periode_dropdown.addItem("All Periode")
+        self.periode_dropdown.addItem("All")
+        self.periode_dropdown.addItem("Tersedia")
+        self.periode_dropdown.addItem("Tidak Tersedia")
+        self.periode_dropdown.currentIndexChanged.connect(self.apply_filters)
 
         top_bar.addWidget(self.periode_dropdown)
         top_bar.addStretch()
 
         return top_bar
-
-
 
     def setup_table(self):
         """Set up the table with calculated column widths based on screen size."""
@@ -392,16 +393,36 @@ class StatusKetersediaanController(QWidget):
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
             # Calculate offset based on current page
             offset = (self.current_page - 1) * self.items_per_page
-            cursor.execute(f'''
-                SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan
-                FROM Mobil
-                LIMIT {self.items_per_page} 
-                OFFSET {offset}
-            ''')
-            data = cursor.fetchall()
+
+            text = self.periode_dropdown.currentText()
+            if text == 'Tersedia' :
+                cursor.execute(f'''
+                    SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan
+                    FROM Mobil WHERE StatusKetersediaan == 1
+                    LIMIT {self.items_per_page} 
+                    OFFSET {offset}
+                ''')
+                data = cursor.fetchall()
+            elif text == "Tidak Tersedia" :
+                cursor.execute(f'''
+                    SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan
+                    FROM Mobil WHERE StatusKetersediaan == 0
+                    LIMIT {self.items_per_page} 
+                    OFFSET {offset}
+                ''')
+                data = cursor.fetchall()
+            else :
+                cursor.execute(f'''
+                    SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan
+                    FROM Mobil
+                    LIMIT {self.items_per_page} 
+                    OFFSET {offset}
+                ''')
+                data = cursor.fetchall()
+            
+
             
             # Set up table rows
             self.table.setRowCount(len(data))
@@ -453,7 +474,6 @@ class StatusKetersediaanController(QWidget):
         layout.addWidget(status_btn, alignment=Qt.AlignCenter)
         self.table.setCellWidget(row, col, container)
 
-    def handle_edit(self, row):
         """Handle the edit action when a customer's edit button is clicked."""
         # Get the NIK of the selected customer
         nik_item = self.table.item(row, 1)
@@ -462,85 +482,6 @@ class StatusKetersediaanController(QWidget):
             print(f"Editing customer with NIK: {nik}")
             # TODO: Implement edit dialog functionality
 
-    def toggle_select_all(self, checked=None):
-        """Toggle selection state of all checkboxes in the table."""
-        # If checked is None, determine state based on first checkbox
-        if checked is None:
-            first_checkbox = self.get_checkbox(0)
-            if first_checkbox:
-                checked = not first_checkbox.isChecked()
-        
-        # Update all checkboxes
-        for row in range(self.table.rowCount()):
-            checkbox = self.get_checkbox(row)
-            if checkbox:
-                checkbox.setChecked(checked)
-
-    def get_checkbox(self, row):
-        """Helper method to get checkbox widget from a specific row."""
-        checkbox_container = self.table.cellWidget(row, 0)
-        if checkbox_container:
-            return checkbox_container.layout().itemAt(0).widget()
-        return None
-
-    def get_selected_rows(self):
-        """Get a list of indices for all selected rows."""
-        selected_rows = []
-        for row in range(self.table.rowCount()):
-            checkbox = self.get_checkbox(row)
-            if checkbox and checkbox.isChecked():
-                selected_rows.append(row)
-        return selected_rows
-
-    def handle_delete_selected(self):
-        """Delete all selected customers from the database."""
-        selected_rows = self.get_selected_rows()
-        if not selected_rows:
-            return
-
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            for row in selected_rows:
-                nik_item = self.table.item(row, 1)
-                if nik_item:
-                    nik = nik_item.text()
-                    cursor.execute('DELETE FROM Pelanggan WHERE NIK = ?', (nik,))
-            
-            conn.commit()
-            
-            # Recalculate total pages and adjust current page if needed
-            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
-            total_records = cursor.fetchone()[0]
-            new_total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
-            
-            # Adjust current page if it's now beyond the total pages
-            if self.current_page > new_total_pages:
-                self.current_page = max(1, new_total_pages)
-            
-            # Reload data and update pagination
+    def apply_filters(self):
+            """Apply filters based on the selected color and year."""
             self.load_data()
-            
-            # Recreate pagination controls
-            bottom_layout = self.findChild(QHBoxLayout)
-            if bottom_layout:
-                # Find and remove old pagination container
-                for i in range(bottom_layout.count()):
-                    item = bottom_layout.itemAt(i)
-                    if item and isinstance(item.widget(), QWidget):
-                        if isinstance(item.widget().layout(), QHBoxLayout):
-                            item.widget().deleteLater()
-                            break
-                
-                # Create and add new pagination container
-                new_pagination = self.setup_pagination()
-                bottom_layout.insertWidget(2, new_pagination)
-            
-        except sqlite3.Error as e:
-            print(f"Error deleting records: {e}")
-            
-        finally:
-            if conn:
-                conn.close()
-
