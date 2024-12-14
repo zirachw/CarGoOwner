@@ -24,7 +24,7 @@ lakukan :
 `git clone https://github.com/zirachw/IF2150-2024-K02-G07-CarGoOwner.git`
 
 lalu :
-- setup venv
+- setup venv (recommended python ver : 3.11.4 or below)
 - install requirements.txt (atau bisa langsung bersamaan dengan setup venv)
 
 run :
