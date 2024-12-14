@@ -33,10 +33,41 @@ class MobilController:
             if cursor.fetchone()[0] == 0:
                 sample_data = [
                     ('J 2024 OWI', self.read_image('src/Component/Mobil/arduino.jpg'), 'ESEMKA', 'Hitam', 2019, 0),
-                    ('RI 1', self.read_image('src/Component/Mobil/bater.jpg'), 'NIGGA', 'Putih', 2025, 1),
-                    ('B 1234 ABC', self.read_image('src/Component/Mobil/battery.jpeg'), 'Toyota Avanza', 'Hitam', 2018, 1),
-                    ('B 2345 BCD', self.read_image('src/Component/Mobil/Nice.jpeg'), 'Toyota Innova', 'Putih', 2019, 1),
-                    ('D 1452 HM', self.read_image('src/Component/Mobil/PP.jpg'), 'Avanza 2005', 'Cream', 2005, 1),
+                    ('RI 1', self.read_image('src/Component/Mobil/bater.jpg'), 'MV3 Garuda', 'Putih', 2025, 1),
+                    ('D 1715 HN', self.read_image('src/Component/Mobil/battery.jpeg'), 'Toyota Avanza', 'Cream', 2007, 1),
+                    ('D 1120 HX', self.read_image('src/Component/Mobil/Nice.jpeg'), 'Pagani Huayra', 'Biru', 2021, 1),
+                    ('KT 1 A', self.read_image('src/Component/Mobil/battery.jpeg'), 'Porsche 911 GT3', 'Putih', 2021, 1),
+                    ('B 1', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model S', 'Hitam', 2020, 1),
+                    ('B 2', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 3', 'Putih', 2020, 1),
+                    ('B 3', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model X', 'Hitam', 2020, 1),
+                    ('B 4', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model Y', 'Putih', 2020, 1),
+                    ('B 5', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Cybertruck', 'Hitam', 2020, 1),
+                    ('B 6', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Roadster', 'Putih', 2020, 1),
+                    ('B 7', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Semi', 'Hitam', 2020, 1),
+                    ('B 8', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 2', 'Putih', 2020, 1),
+                    ('B 9', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 4', 'Hitam', 2020, 1),
+                    ('B 10', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 5', 'Putih', 2020, 1),
+                    ('B 11', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 6', 'Hitam', 1945, 1),
+                    ('B 12', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 7', 'Putih', 1945, 1),
+                    ('B 13', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 8', 'Hitam', 1945, 1),
+                    ('B 14', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 9', 'Putih', 1945, 1),
+                    ('B 15', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 10', 'Hitam', 1945, 1),
+                    ('B 16', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 11', 'Putih', 1945, 1),
+                    ('B 17', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 12', 'Hitam', 1945, 1),
+                    ('B 18', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 13', 'Putih', 1945, 1),
+                    ('B 19', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 14', 'Hitam', 1945, 1),
+                    ('B 20', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 15', 'Putih', 1945, 1),
+                    ('B 21', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 16', 'Hitam', 1945, 1),
+                    ('B 22', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 17', 'Putih', 1945, 1),
+                    ('B 23', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 18', 'Hitam', 1945, 1),
+                    ('B 24', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 19', 'Putih', 1945, 1),
+                    ('B 25', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 20', 'Hitam', 1945, 1),
+                    ('B 26', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 21', 'Putih', 1945, 1),
+                    ('B 27', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 22', 'Hitam', 1945, 1),
+                    ('B 28', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 23', 'Putih', 1945, 1),
+                    ('B 29', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 24', 'Hitam', 1945, 1),
+                    ('B 30', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 25', 'Putih', 1945, 1),
+                    ('B 31', self.read_image('src/Component/Mobil/battery.jpeg'), 'Tesla Model 26', 'Hitam', 1945, 1),
                     # Add more sample data as needed
                 ]
                 
@@ -46,9 +77,6 @@ class MobilController:
                 ''', sample_data)
                 
             conn.commit()
-            
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
             
         finally:
             if conn:
@@ -141,6 +169,67 @@ class MobilController:
             
         except sqlite3.Error as e:
             print(f"Error listing Mobil: {e}")
+            return []
+            
+        finally:
+            if conn:
+                conn.close()
+
+    def get_unique_colors(self):
+        """Get unique colors from the database."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT DISTINCT Warna FROM Mobil')
+            colors = cursor.fetchall()
+            return [color[0] for color in colors]
+            
+        except sqlite3.Error as e:
+            print(f"Error getting unique colors: {e}")
+            return []
+            
+        finally:
+            if conn:
+                conn.close()
+
+    def get_unique_years(self):
+        """Get unique years from the database."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT DISTINCT Tahun FROM Mobil')
+            years = cursor.fetchall()
+            return [year[0] for year in years]
+            
+        except sqlite3.Error as e:
+            print(f"Error getting unique years: {e}")
+            return []
+            
+        finally:
+            if conn:
+                conn.close()
+
+    def filter_mobil(self, color=None, year=None, limit=10, offset=0):
+        """Filter Mobil objects based on color and year with pagination."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            query = 'SELECT * FROM Mobil WHERE 1=1'
+            params = []
+            if color:
+                query += ' AND Warna = ?'
+                params.append(color)
+            if year:
+                query += ' AND Tahun = ?'
+                params.append(year)
+            query += ' LIMIT ? OFFSET ?'
+            params.extend([limit, offset])
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            return [Mobil(*row) for row in rows]
+            
+        except sqlite3.Error as e:
+            print(f"Error filtering Mobil: {e}")
             return []
             
         finally:
