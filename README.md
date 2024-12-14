@@ -26,7 +26,7 @@ lalu :
 - install requirements.txt (atau bisa langsung bersamaan dengan setup venv)
 
 run :
-python mainUI.py
+`python mainUI.py`
 
 ## Features
 
