@@ -18,7 +18,15 @@ Kelompok ini terdiri dari :
 
 ## Execution Guide
 
-lakukan git clone, lalu setup venv + requirements.txt. Setelah itu run file "mainUI.py"
+lakukan :
+`git clone https://github.com/zirachw/IF2150-2024-K02-G07-CarGoOwner.git`
+
+lalu :
+- setup venv
+- install requirements.txt (atau bisa langsung bersamaan dengan setup venv)
+
+run :
+python mainUI.py
 
 ## Features
 
