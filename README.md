@@ -43,6 +43,11 @@ run :
 - Modul Notifikasi : Nayaka Ghana Subrata
 - Modul Laporan : Fityatul Haq Rosyidi
 
+## Tabel Basis Data
+![](img/a.png)
+![](img/b.png)
+![](img/c.png)
+
 <br>
 <h2 align="left"> 📱 Framework </h2>
 <br/>
