@@ -20,15 +20,15 @@ CREATE TABLE Pelanggan (
 
 CREATE TABLE Peminjaman (
     ID INTEGER PRIMARY KEY AUTOINCREMENT, 
-    NomorPlat TEXT NOT NULL,
+    Nama TEXT NOT NULL,    
     NIK TEXT NOT NULL,
-    Nama TEXT NOT NULL,         
+    NomorPlat TEXT NOT NULL,
     Kontak TEXT NOT NULL,       
-    TanggalPeminjaman DATETIME NOT NULL,
-    TanggalPengembalian DATETIME,
-    TanggalPembayaran DATETIME,
-    TenggatPengembalian DATETIME NOT NULL,
-    TenggatPembayaran DATETIME NOT NULL,
+    TanggalPeminjaman DATE NOT NULL,
+    TanggalPengembalian DATE,
+    TanggalPembayaran DATE,
+    TenggatPengembalian DATE NOT NULL,
+    TenggatPembayaran DATE NOT NULL,
     BesarPembayaran INTEGER NOT NULL, 
     StatusPengembalian INTEGER DEFAULT 0 CHECK (StatusPengembalian IN (0, 1)), 
     StatusPembayaran INTEGER DEFAULT 0 CHECK (StatusPembayaran IN (0, 1)),     
@@ -40,6 +40,6 @@ CREATE TABLE Notifikasi (
     IDNotif INTEGER PRIMARY KEY AUTOINCREMENT,  
     IDPeminjaman INTEGER NOT NULL,
     JenisNotif TEXT NOT NULL,                 
-    TanggalNotif DATETIME NOT NULL,
+    TanggalNotif DATE NOT NULL,
     FOREIGN KEY (IDPeminjaman) REFERENCES Peminjaman(IDPeminjaman)
 );

@@ -7,9 +7,8 @@ from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
 import sqlite3
 
-class StatusKetersediaanController(QWidget):
+class PeminjamanController(QWidget):
     def __init__(self, schema_path, parent=None):
-        """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
         
         # Initialize screen dimensions and layout calculations
@@ -18,7 +17,7 @@ class StatusKetersediaanController(QWidget):
         # Store important paths for database access
         self.schema_path = schema_path
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerMobil.db")
+        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPelanggan.db")
         
         # Initialize pagination variables
         self.current_page = 1
@@ -68,20 +67,30 @@ class StatusKetersediaanController(QWidget):
         layout.addLayout(bottom_layout)
 
     def setup_table(self):
-        """Set up the table with calculated column widths based on screen size."""
+        """Set up the table with adjusted column widths based on screen size."""
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
+        self.table.setColumnCount(12)
         self.table.setHorizontalHeaderLabels([
-            "NomorPlat", "Model", "Warna", "Tahun", "Status"
+            "", "Nama", "NIK", "Nomor Plat", "Kontak", 
+            "Tanggal Peminjaman", "Tanggal Pengembalian", 
+            "Tanggal Pembayaran", "Tenggat Pengembalian", 
+            "Besar Pembayaran", "Status Pengembalian", "Status Pembayaran"
         ])
         
         # Define column percentages (total should be 100)
         column_percentages = {
-            0: 20,     # Checkbox
-            1: 20,    # NIK
-            2: 20,    # Nama
-            3: 20,    # Kontak
-            4: 20,    # Alamat
+            0: 5,    # ID
+            1: 12,   # Nama
+            2: 12,   # NIK
+            3: 10,   # Nomor Plat
+            4: 10,   # Kontak
+            5: 12,   # Tanggal Peminjaman
+            6: 12,   # Tanggal Pengembalian
+            7: 12,   # Tanggal Pembayaran
+            8: 12,   # Tenggat Pengembalian
+            9: 8,    # Besar Pembayaran
+            10: 8,   # Status Pengembalian
+            11: 8    # Status Pembayaran
         }
         
         # Calculate and set column widths based on available width
@@ -104,7 +113,7 @@ class StatusKetersediaanController(QWidget):
                 color: #6B7280;
                 font-size: 14px;
                 text-align: left;
-                height: 24px;
+                height: 36px;
             }
             QTableWidget::item {
                 border-bottom: 1px solid #F3F4F6;
@@ -118,6 +127,7 @@ class StatusKetersediaanController(QWidget):
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+
 
     def setup_bottom_controls(self):
         """Set up the bottom controls with proper spacing and alignment."""
@@ -187,7 +197,7 @@ class StatusKetersediaanController(QWidget):
         # Calculate total pages
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM (SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan FROM Mobil)')
+        cursor.execute('SELECT COUNT(*) FROM Peminjaman')
         total_records = cursor.fetchone()[0]
         self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
         conn.close()
@@ -316,71 +326,122 @@ class StatusKetersediaanController(QWidget):
         if self.current_page < self.total_pages:
             self.go_to_page(self.current_page + 1)
 
+   
     def init_database(self):
-        """Initialize the database and create tables with sample customer data."""
+        """Initialize the database and create tables with sample data."""
         try:
-            # Establish database connection
             conn = sqlite3.connect(self.db_path)
+            conn.execute("PRAGMA foreign_keys = ON")  # Ensure foreign key support is enabled
             cursor = conn.cursor()
-            
-            # Create the Pelanggan table with proper column order
+
+            # Create the Mobil table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Mobil (
                     NomorPlat TEXT PRIMARY KEY,
-                    Model TEXT,
-                    Warna TEXT,
-                    Tahun INTEGER,
-                    StatusKetersediaan BOOLEAN
+                    Merk TEXT NOT NULL,
+                    Model TEXT NOT NULL,
+                    Tahun INTEGER NOT NULL
                 )
             ''')
-            
-            # Check if table is empty and needs sample data
-            cursor.execute('SELECT COUNT(*) FROM (SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan FROM Mobil)')
+
+            # Create the Pelanggan table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS Pelanggan (
+                    NIK TEXT PRIMARY KEY,
+                    Nama TEXT NOT NULL,
+                    Alamat TEXT NOT NULL,
+                    Kontak TEXT NOT NULL
+                )
+            ''')
+
+            # Create the Peminjaman table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS Peminjaman (
+                    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nama TEXT NOT NULL,
+                    NIK TEXT NOT NULL,
+
+                    NomorPlat TEXT NOT NULL,
+                    Kontak TEXT NOT NULL,
+                    TanggalPeminjaman DATETIME NOT NULL,
+                    TanggalPengembalian DATETIME,
+                    TanggalPembayaran DATETIME,
+                    TenggatPengembalian DATETIME NOT NULL,
+                    TenggatPembayaran DATETIME NOT NULL,
+                    BesarPembayaran INTEGER NOT NULL,
+                    StatusPengembalian INTEGER DEFAULT 0 CHECK (StatusPengembalian IN (0, 1)),
+                    StatusPembayaran INTEGER DEFAULT 0 CHECK (StatusPembayaran IN (0, 1)),
+                    FOREIGN KEY (NomorPlat) REFERENCES Mobil(NomorPlat),
+                    FOREIGN KEY (NIK) REFERENCES Pelanggan(NIK)
+                )
+            ''')
+
+            # Insert sample data for Mobil if the table is empty
+            cursor.execute('SELECT COUNT(*) FROM Mobil')
             if cursor.fetchone()[0] == 0:
-                # Prepare sample data with 60 varied entries
-                sample_data = [
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
-                    ('B 1212 D', 'Xenia', 'Putih', '2009', 1),
+                sample_mobil = [
+                    ('AB1234CD', 'Toyota', 'Avanza', 2020),
+                    ('B5678EF', 'Honda', 'Jazz', 2021),
+                    ('C9101GH', 'Suzuki', 'Ertiga', 2019),
+                    ('D2345IJ', 'Nissan', 'Livina', 2020),
+                    ('E6789KL', 'Mitsubishi', 'Xpander', 2021),
                 ]
-                
-                # Insert all sample data
                 cursor.executemany('''
-                    INSERT INTO Mobil (NomorPlat, Model, Warna, Tahun, StatusKetersediaan)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', sample_data)
-                
-            # Commit changes and ensure they're saved
+                    INSERT INTO Mobil (NomorPlat, Merk, Model, Tahun)
+                    VALUES (?, ?, ?, ?)
+                ''', sample_mobil)
+
+            # Insert sample data for Pelanggan if the table is empty
+            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
+            if cursor.fetchone()[0] == 0:
+                sample_pelanggan = [
+                    ('3201234567890123', 'John Doe', 'Jl. Sudirman No. 1', '081234567890'),
+                    ('3209876543210987', 'Jane Smith', 'Jl. Thamrin No. 2', '082345678901'),
+                    ('3205678901234567', 'Michael Johnson', 'Jl. Merdeka No. 3', '083456789012'),
+                    ('3203456789012345', 'Emily Davis', 'Jl. Gajah Mada No. 4', '084567890123'),
+                    ('3201230987654321', 'Robert Brown', 'Jl. Diponegoro No. 5', '085678901234'),
+                ]
+                cursor.executemany('''
+                    INSERT INTO Pelanggan (NIK, Nama, Alamat, Kontak)
+                    VALUES (?, ?, ?, ?)
+                ''', sample_pelanggan)
+
+            # Insert sample data for Peminjaman if the table is empty
+            cursor.execute('SELECT COUNT(*) FROM Peminjaman')
+            if cursor.fetchone()[0] == 0:
+                sample_peminjaman = [
+                    ('AB1234CD', '3201234567890123', 'John Doe', '081234567890',
+                    '2024-12-01 10:00:00', '2024-12-07 15:00:00', '2024-12-07 17:00:00',
+                    '2024-12-07 15:00:00', '2024-12-07 17:00:00', 500000, 1, 1),
+                    ('B5678EF', '3209876543210987', 'Jane Smith', '082345678901',
+                    '2024-12-02 12:00:00', None, None, '2024-12-08 12:00:00', '2024-12-08 15:00:00',
+                    600000, 0, 0),
+                    ('C9101GH', '3205678901234567', 'Michael Johnson', '083456789012',
+                    '2024-11-28 09:00:00', '2024-12-05 14:00:00', '2024-12-05 14:30:00',
+                    '2024-12-05 14:00:00', '2024-12-05 14:30:00', 450000, 1, 1),
+                    ('D2345IJ', '3203456789012345', 'Emily Davis', '084567890123',
+                    '2024-11-30 11:30:00', None, None, '2024-12-06 11:30:00', '2024-12-06 14:00:00',
+                    550000, 0, 0),
+                    ('E6789KL', '3201230987654321', 'Robert Brown', '085678901234',
+                    '2024-12-03 14:00:00', None, None, '2024-12-09 14:00:00', '2024-12-09 16:00:00',
+                    700000, 0, 0),
+                ]
+                cursor.executemany('''
+                    INSERT INTO Peminjaman (NomorPlat, NIK, Nama, Kontak, TanggalPeminjaman, 
+                                            TanggalPengembalian, TanggalPembayaran, 
+                                            TenggatPengembalian, TenggatPembayaran, 
+                                            BesarPembayaran, StatusPengembalian, StatusPembayaran)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', sample_peminjaman)
+
+            # Commit changes
             conn.commit()
-            
         except sqlite3.Error as e:
             print(f"Database error: {e}")
-            
         finally:
-            # Ensure connection is closed even if an error occurs
             if conn:
                 conn.close()
+
 
     def load_data(self):
         """Load and display data from the database with pagination."""
@@ -391,26 +452,33 @@ class StatusKetersediaanController(QWidget):
             # Calculate offset based on current page
             offset = (self.current_page - 1) * self.items_per_page
             cursor.execute(f'''
-                SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan
-                FROM Mobil
-                LIMIT {self.items_per_page} 
-                OFFSET {offset}
+                SELECT * FROM Peminjaman 
             ''')
             data = cursor.fetchall()
             
             # Set up table rows
             self.table.setRowCount(len(data))
-            print(data)
-            for row, record in enumerate(data):                
+            for row, record in enumerate(data):
+                # Add checkbox
+                checkbox = QCheckBox()
+                checkbox_container = QWidget()
+                checkbox_layout = QHBoxLayout(checkbox_container)
+                checkbox_layout.setContentsMargins(16, 16, 16, 16)
+                checkbox_layout.addWidget(checkbox, alignment=Qt.AlignCenter)
+                self.table.setCellWidget(row, 0, checkbox_container)
+                
                 # Add data cells
                 for col, value in enumerate(record):
-                    if col == 4:  # Status column
-                        self.create_status_cell(row, col, value == 1)
+                    if col == 5:  # Status column
+                        self.create_status_cell(row, col + 1, value == 1)
                     else:
                         item = QTableWidgetItem(str(value))
                         item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
                         item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                        self.table.setItem(row, col, item)
+                        self.table.setItem(row, col + 1, item)
+                
+                # Add action button
+                self.create_action_cell(row)
                 
                 # Set row height
                 self.table.setRowHeight(row, 72)
@@ -448,6 +516,30 @@ class StatusKetersediaanController(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.addWidget(status_btn, alignment=Qt.AlignCenter)
         self.table.setCellWidget(row, col, container)
+
+    def create_action_cell(self, row):
+        """Create a styled action cell with an edit button for each customer row."""
+        action_btn = QPushButton("✎")
+        action_btn.setStyleSheet("""
+            QPushButton {
+                border: none;
+                color: #6B7280;
+                font-size: 16px;
+                font-family: 'Poly', sans-serif;
+            }
+            QPushButton:hover {
+                color: #374151;
+            }
+        """)
+        
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.addWidget(action_btn, alignment=Qt.AlignCenter)
+        self.table.setCellWidget(row, 7, container)
+        
+        # Connect the button to edit handler
+        action_btn.clicked.connect(lambda: self.handle_edit(row))
 
     def handle_edit(self, row):
         """Handle the edit action when a customer's edit button is clicked."""
@@ -507,7 +599,7 @@ class StatusKetersediaanController(QWidget):
             conn.commit()
             
             # Recalculate total pages and adjust current page if needed
-            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
+            cursor.execute('SELECT COUNT(*) FROM Peminjaman')
             total_records = cursor.fetchone()[0]
             new_total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
             
@@ -538,4 +630,4 @@ class StatusKetersediaanController(QWidget):
             
         finally:
             if conn:
-                conn.close()
+                conn.close()        

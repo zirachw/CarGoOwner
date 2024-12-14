@@ -3,9 +3,10 @@ from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWin
 from PyQt5.QtGui import QFont, QIcon, QFontDatabase, QPixmap
 from PyQt5.QtCore import Qt
 from Mobil.MobilUI import MobilUI
-from Peminjaman.peminjamanUI import PeminjamanUI
+from Peminjaman.peminjamanController import PeminjamanController
 from Pelanggan.PelangganController import PelangganController
-from Laporan.HistoriPeminjaman import HistoriPEminjamanController
+from Notifikasi.NotifikasiController import JadwalPengembalian, PembayaranRental
+from Laporan.HistoriPeminjaman import HistoriPeminjamanController
 from Laporan.Pendapatan import PendapatanController
 from Laporan.StatusKetersediaan import StatusKetersediaanController
 
@@ -37,12 +38,12 @@ class MenuUI(QMainWindow):
         self.menu = self.MainUI()
         self.mobil = MobilUI()
         # Panggil Peminjaman UI
-        self.peminjaman = PeminjamanUI(schema_path="src/schema.sql")
+        self.peminjaman = PeminjamanController(schema_path="src/schema.sql")
         self.pelanggan = PelangganController(schema_path="src/schema.sql")
         # Panggil Pelanggan UI
-        self.jadwalpengembalian = QWidget()
-        self.pembayaranrental = QWidget()
-        self.historipeminjamanmobil = HistoriPEminjamanController(schema_path="src/schema.sql")
+        self.jadwalpengembalian = JadwalPengembalian(schema_path="src/schema.sql")
+        self.pembayaranrental = PembayaranRental(schema_path="src/schema.sql")
+        self.historipeminjamanmobil = HistoriPeminjamanController(schema_path="src/schema.sql")
         self.statusketersediaanmobil = StatusKetersediaanController(schema_path="src/schema.sql")
         self.pendapatan = PendapatanController(schema_path="src/schema.sql")
 
