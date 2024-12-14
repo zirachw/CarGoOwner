@@ -27,3 +27,14 @@ lakukan git clone, lalu setup venv + requirements.txt. Setelah itu run file "mai
 - Pelanggan
 - Notifikasi
 - Laporan
+
+## Framework
+<br>
+<h2 align="left"> 📱 Framework </h2>
+<br/>
+<div align="center">
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=python" /> <br>
+    <img src="https://skillicons.dev/icons?i=github,vscode,figma,git" />
+  </a>
+</div>
