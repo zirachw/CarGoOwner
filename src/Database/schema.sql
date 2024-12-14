@@ -35,11 +35,3 @@ CREATE TABLE Peminjaman (
     FOREIGN KEY (NomorPlat) REFERENCES Mobil(NomorPlat),
     FOREIGN KEY (NIK) REFERENCES Pelanggan(NIK)
 );
-
-CREATE TABLE Notifikasi (
-    IDNotif INTEGER PRIMARY KEY AUTOINCREMENT,  
-    IDPeminjaman INTEGER NOT NULL,
-    JenisNotif TEXT NOT NULL,                 
-    TanggalNotif DATE NOT NULL,
-    FOREIGN KEY (IDPeminjaman) REFERENCES Peminjaman(IDPeminjaman)
-);

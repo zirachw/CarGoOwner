@@ -38,7 +38,7 @@ class MenuUI(QMainWindow):
         self.menu = self.MainUI()
         self.mobil = MobilController()
         # Panggil Peminjaman UI
-        self.peminjaman = PeminjamanController(schema_path="src/schema.sql")
+        self.peminjaman = PeminjamanUI()
         self.pelanggan = PelangganController(schema_path="src/schema.sql")
         # Panggil Pelanggan UI
         self.jadwalpengembalian = JadwalPengembalian(schema_path="src/schema.sql")
