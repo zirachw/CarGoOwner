@@ -36,6 +36,13 @@ run :
 - Notifikasi (show)
 - Laporan (show)
 
+## Pembagian Tugas dan Modul
+- Folder Mobil : Muhammad Aditya Rahmadeni
+- Modul Pelanggan : Razi Rachman Widyadhana
+- Modul Peminjaman : Muhammad Adha Ridwan
+- Modul Notifikasi : Nayaka Ghana Subrata
+- Modul Laporan : Fityatul Haq Rosyidi
+
 <br>
 <h2 align="left"> 📱 Framework </h2>
 <br/>
