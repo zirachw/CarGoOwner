@@ -1,5 +1,5 @@
 # IF2150-2024-K02-G07-CarGoOwner
-Tugas Besar K02 G07 IF2150 Rekayasa Perangkat Lunak
+Tugas Besar K02 G07 IF2150 Rekayasa Perangkat Lunak : Aplikasi Pemantauan Rental Mobil
 
 ## Anggota Kelompok
 
@@ -15,6 +15,8 @@ Kelompok ini terdiri dari :
 ## Directory Information
 
 - src : Berisi source code
+- img : Berisi foto
+- doc : Tampilan program ketika dijalankan
 
 ## Execution Guide
 
