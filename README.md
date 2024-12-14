@@ -8,7 +8,7 @@ Kelompok ini terdiri dari :
 
 1. Razi Rachman Widyadhana - 13523004
 2. Muhammad Aditya Rahmadeni - 13523028
-3. Nayaka Ghana Subrata - 13523048
+3. Nayaka Ghana Subrata - 135230490
 4. Muhammad Adha Rdiwan - 13523098
 5. Fityatul Haq Rosyidi - 13523116
 
