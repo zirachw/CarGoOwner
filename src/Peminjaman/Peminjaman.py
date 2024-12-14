@@ -24,6 +24,7 @@ class Peminjaman:
                 offset = (current_page - 1) * items_per_page
                 cursor.execute(f'''
                     SELECT ID, NIK, Nama, Kontak, NomorPlat, TanggalPeminjaman, TanggalPengembalian, StatusPengembalian FROM Peminjaman
+                    WHERE StatusPengembalian = 0 AND TenggatPengembalian < DATE(CURRENT_TIMESTAMP, '+7 hours')
                     LIMIT ?
                     OFFSET ?
                 ''', (items_per_page, offset))
@@ -51,7 +52,8 @@ class Peminjaman:
 
                 offset = (current_page - 1) * items_per_page
                 cursor.execute(f'''
-                    SELECT ID, NIK, Nama, Kontak, NomorPlat, TenggatPembayaran, BesarPembayaran, StatusPembayaran FROM Peminjaman 
+                    SELECT ID, NIK, Nama, Kontak, NomorPlat, TenggatPembayaran, BesarPembayaran, StatusPembayaran FROM Peminjaman
+                    WHERE StatusPembayaran = 0 AND TenggatPembayaran < DATE(CURRENT_TIMESTAMP, '+7 hours')
                     LIMIT ?
                     OFFSET ?
                 ''', (items_per_page, offset))
