@@ -20,9 +20,9 @@ CREATE TABLE Pelanggan (
 
 CREATE TABLE Peminjaman (
     ID INTEGER PRIMARY KEY AUTOINCREMENT, 
-    NomorPlat TEXT NOT NULL,
+    Nama TEXT NOT NULL,    
     NIK TEXT NOT NULL,
-    Nama TEXT NOT NULL,         
+    NomorPlat TEXT NOT NULL,
     Kontak TEXT NOT NULL,       
     TanggalPeminjaman DATETIME NOT NULL,
     TanggalPengembalian DATETIME,
