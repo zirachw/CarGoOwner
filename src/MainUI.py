@@ -3,8 +3,8 @@ from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QApplication, QMainWin
 from PyQt5.QtGui import QFont, QIcon, QFontDatabase, QPixmap
 from PyQt5.QtCore import Qt
 from Mobil.MobilController import MobilController
-from Peminjaman.peminjamanController import PeminjamanController
-from Pelanggan.PelangganController import PelangganController
+from Peminjaman.peminjamanUI import PeminjamanUI
+from Pelanggan.MenuPelanggan import PelangganController
 from Notifikasi.NotifikasiController import JadwalPengembalian, PembayaranRental
 from Laporan.HistoriPeminjaman import HistoriPeminjamanController
 from Laporan.Pendapatan import PendapatanController
@@ -39,13 +39,13 @@ class MenuUI(QMainWindow):
         self.mobil = MobilController()
         # Panggil Peminjaman UI
         self.peminjaman = PeminjamanUI()
-        self.pelanggan = PelangganController(schema_path="src/schema.sql")
+        self.pelanggan = PelangganController()
         # Panggil Pelanggan UI
-        self.jadwalpengembalian = JadwalPengembalian(schema_path="src/schema.sql")
-        self.pembayaranrental = PembayaranRental(schema_path="src/schema.sql")
-        self.historipeminjamanmobil = HistoriPeminjamanController(schema_path="src/schema.sql")
-        self.statusketersediaanmobil = StatusKetersediaanController(schema_path="src/schema.sql")
-        self.pendapatan = PendapatanController(schema_path="src/schema.sql")
+        self.jadwalpengembalian = JadwalPengembalian()
+        self.pembayaranrental = PembayaranRental()
+        self.historipeminjamanmobil = HistoriPeminjamanController()
+        self.statusketersediaanmobil = StatusKetersediaanController()
+        self.pendapatan = PendapatanController()
 
         # Add widgets to stacked widget
         self.stackedWidget.addWidget(self.menu)

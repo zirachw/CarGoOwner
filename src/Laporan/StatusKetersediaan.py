@@ -6,9 +6,10 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
 import sqlite3
+from pathlib import Path
 
 class StatusKetersediaanController(QWidget):
-    def __init__(self, schema_path, parent=None):
+    def __init__(self, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
         
@@ -16,9 +17,7 @@ class StatusKetersediaanController(QWidget):
         self.setup_window_geometry()
         
         # Store important paths for database access
-        self.schema_path = schema_path
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerMobil.db")
+        self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
         
         # Initialize pagination variables
         self.current_page = 1

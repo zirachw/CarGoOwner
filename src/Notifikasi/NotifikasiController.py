@@ -4,19 +4,17 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                            QDesktopWidget)
 from PyQt5.QtCore import Qt
 import sqlite3
+from pathlib import Path
 
 class JadwalPengembalian(QWidget):
-    def __init__(self, schema_path, parent=None):
+    def __init__(self, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
         
         # Initialize screen dimensions and layout calculations
         self.setup_window_geometry()
         
-        # Store important paths for database access
-        self.schema_path = schema_path
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPeminjaman.db")
+        self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
         
         # Initialize pagination variables
         self.current_page = 1
@@ -382,17 +380,14 @@ class JadwalPengembalian(QWidget):
 
 
 class PembayaranRental(QWidget):
-    def __init__(self, schema_path, parent=None):
+    def __init__(self, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
         
         # Initialize screen dimensions and layout calculations
         self.setup_window_geometry()
         
-        # Store important paths for database access
-        self.schema_path = schema_path
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPeminjaman.db")
+        self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
         
         # Initialize pagination variables
         self.current_page = 1

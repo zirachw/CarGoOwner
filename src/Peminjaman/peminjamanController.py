@@ -1,16 +1,12 @@
 import os
 import sqlite3
 import datetime
+from pathlib import Path
 
 class PeminjamanController:
-    def __init__(self, schema_path):
+    def __init__(self):
         # Initialize database paths
-        self.schema_path = schema_path
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPeminjaman.db")
-        
-        # Initialize the database
-        self.init_database()
+        self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
 
     def init_database(self):
         try:

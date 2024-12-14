@@ -8,6 +8,7 @@ from PyQt5.QtGui import QFont, QColor, QIcon
 import sqlite3
 from .peminjamanController import PeminjamanController
 import datetime
+from pathlib import Path
 
 class AddPeminjamanDialog(QDialog):
     """A dialog for adding new Peminjaman records with real-time validation and user feedback."""
@@ -25,7 +26,7 @@ class AddPeminjamanDialog(QDialog):
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setModal(True)
-        self.controller = PeminjamanController("src/schema.sql")
+        self.controller = PeminjamanController()
 
         # Store options for dropdowns
         self.available_mobil = available_mobil or []
@@ -303,15 +304,14 @@ class AddPeminjamanDialog(QDialog):
         }
 
 class PeminjamanUI(QWidget):
-    def __init__(self, schema_path = "src/schema.sql", parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         
         self.setup_window_geometry()
         
-        self.schema_path = schema_path
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPeminjaman.db")
-        self.controller = PeminjamanController(self.schema_path)
+        self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
+        self.schema_path = Path(__file__).parent.parent / "schema.sql"
+        self.controller = PeminjamanController()
         self.current_page = 1
         self.items_per_page = 20
         self.pagination_buttons = []  

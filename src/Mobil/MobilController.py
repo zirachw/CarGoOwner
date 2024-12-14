@@ -16,7 +16,7 @@ class MobilController(QWidget):
 
         self.pagination_buttons = []  # Store pagination buttons
 
-        self.mobil = Mobil("src/schema.sql")
+        self.mobil = Mobil()
         
         # Initialize navigation button references
         self.first_button = None

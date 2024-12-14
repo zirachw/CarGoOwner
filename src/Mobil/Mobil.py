@@ -2,6 +2,7 @@ import os
 import sqlite3
 from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple
+from pathlib import Path
 
 @dataclass
 class Mobil:
@@ -16,11 +17,10 @@ class Mobil:
     Tahun: int
     Status: bool
     
-    def __init__(self, schema_path: str):
+    def __init__(self):
         """Initialize database connection and setup"""
-        self.schema_path = schema_path
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerMobil.db")
+        self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
+        self.schema_path = Path(__file__).parent.parent / "schema.sql"
         self.init_database()
 
     def init_database(self):

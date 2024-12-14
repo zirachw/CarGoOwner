@@ -6,9 +6,10 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
 import sqlite3, locale
+from pathlib import Path
 
 class PendapatanController(QWidget):
-    def __init__(self, schema_path, parent=None):
+    def __init__(self, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
 
@@ -16,9 +17,7 @@ class PendapatanController(QWidget):
         self.setup_window_geometry()
         
         # Store important paths for database access
-        self.schema_path = schema_path
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(schema_path)))
-        self.db_path = os.path.join(self.base_dir, "src/CarGoOwnerPeminjaman.db")
+        self.db_path = Path(__file__).parent.parent / "Database/CarGoOwner.db"
         
         # Initialize pagination variables
         self.current_page = 1
@@ -160,23 +159,23 @@ class PendapatanController(QWidget):
     def setup_top_bar(self):
         top_bar = QHBoxLayout()
 
-        locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
+        # locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
 
-        total = self.get_total_pembayaran()
-        formatted_number = locale.currency(total, grouping=True)
-        label = QLabel(f"Total Pembayaran: {formatted_number}")
+        # total = self.get_total_pembayaran()
+        # # formatted_number = locale.currency(total, grouping=True)
+        # # label = QLabel(f"Total Pembayaran: {formatted_number}")
 
-        label.setStyleSheet("""
-            background-color: #D3D3D3;   /* Warna abu-abu */
-            border-radius: 15px;         /* Sudut bundar */
-            padding: 10px;               /* Ruang di dalam label */
-            font-size: 14px;             /* Ukuran font */
-            font-family: 'Poly', sans-serif;
-            color: black;                /* Warna teks */
-        """)
+        # label.setStyleSheet("""
+        #     background-color: #D3D3D3;   /* Warna abu-abu */
+        #     border-radius: 15px;         /* Sudut bundar */
+        #     padding: 10px;               /* Ruang di dalam label */
+        #     font-size: 14px;             /* Ukuran font */
+        #     font-family: 'Poly', sans-serif;
+        #     color: black;                /* Warna teks */
+        # """)
 
-        top_bar.addWidget(label)
-        top_bar.addStretch()
+        # top_bar.addWidget(label)
+        # top_bar.addStretch()
 
         return top_bar
 
