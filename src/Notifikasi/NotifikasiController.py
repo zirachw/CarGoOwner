@@ -438,8 +438,8 @@ class PembayaranRental(QWidget):
         self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
         conn.close()
 
-        self.message_error = QLabel("Tidak ada notifikasi", self)
         # If no records, hide pagination and return empty container
+        self.message_error = QLabel("Tidak ada notifikasi", self)
         if total_records == 0:
             self.message_error.setAlignment(Qt.AlignCenter)
             self.message_error.setStyleSheet("font-size: 42px; font-family: 'Poly', sans-serif; color: #6B7280;")
