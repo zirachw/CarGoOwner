@@ -110,7 +110,7 @@ class DatabaseManager:
             cars_data = []
             used_plates = set()
             
-            for _ in range(36):
+            for _ in range(60):
                 brand, models = random.choice(car_models)
                 img = open(random.choice(img_random), 'rb').read()
                 plate = self._generate_plate()
@@ -214,7 +214,7 @@ class DatabaseManager:
             rental_data = []
             current_date = datetime.now()
             
-            for _ in range(20):
+            for _ in range(50):
                 # Random dates within reasonable range
                 rental_date = current_date - timedelta(days=random.randint(0, 60))
                 due_return_date = rental_date + timedelta(days=random.randint(3, 14))
