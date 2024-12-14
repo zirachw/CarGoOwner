@@ -1,7 +1,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
-                           QLabel, QTableWidget, QTableWidgetItem, QHeaderView, 
+                           QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QComboBox,
                            QFrame, QSizePolicy, QCheckBox, QToolButton, QDesktopWidget)
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
@@ -58,6 +58,26 @@ class StatusKetersediaanController(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
+    
+        top_bar = self.setup_top_bar()
+        layout.addLayout(top_bar)
+
+        # Calculate total pages
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM (SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan FROM Mobil)')
+        total_records = cursor.fetchone()[0]
+        self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
+        conn.close()
+
+        # If no records, hide pagination and return empty container
+        self.message_error = QLabel("Tidak ada Data", self)
+        self.message_error.hide()
+        if total_records == 0:
+            self.message_error.setAlignment(Qt.AlignCenter)
+            self.message_error.setStyleSheet("font-size: 42px; font-family: 'Poly', sans-serif; color: #6B7280;")
+            layout.addWidget(self.message_error)
+            return
         
         # Initialize and setup the table
         self.setup_table()
@@ -66,6 +86,29 @@ class StatusKetersediaanController(QWidget):
         # Setup bottom controls (pagination, buttons)
         bottom_layout = self.setup_bottom_controls()
         layout.addLayout(bottom_layout)
+
+    def setup_top_bar(self):
+        top_bar = QHBoxLayout()
+
+        self.periode_dropdown = QComboBox()
+        self.periode_dropdown.setFont(QFont("Poly", 12))
+        self.periode_dropdown.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                padding-left: 20px;
+                border: 1px solid #D1D5DB;
+                border-radius: 5px;
+                background-color: #FFFFFF;
+            }
+        """)
+        self.periode_dropdown.addItem("All Periode")
+
+        top_bar.addWidget(self.periode_dropdown)
+        top_bar.addStretch()
+
+        return top_bar
+
+
 
     def setup_table(self):
         """Set up the table with calculated column widths based on screen size."""
@@ -123,56 +166,14 @@ class StatusKetersediaanController(QWidget):
         """Set up the bottom controls with proper spacing and alignment."""
         bottom_layout = QHBoxLayout()
         
-        # Create Select/Deselect All button
-        select_all_btn = QPushButton("Select/Deselect All")
-        select_all_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #f5f5f5;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                color: #666666;
-                font-family: 'Poly', sans-serif;
-                font-size: 13px;
-            }
-            QPushButton:hover {
-                background-color: #e8e8e8;
-            }
-        """)
-        select_all_btn.clicked.connect(self.toggle_select_all)
-        
         # Set up pagination
         pagination_container = self.setup_pagination()
         
-        # Create action buttons
-        add_button = QPushButton("+")
-        delete_button = QPushButton("×")
-        
-        for btn in (add_button, delete_button):
-            btn.setFixedSize(56, 56)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {('#10B981' if btn == add_button else '#EF4444')};
-                    border-radius: 28px;
-                    color: white;
-                    font-size: 24px;
-                }}
-                QPushButton:hover {{
-                    background-color: {('#059669' if btn == add_button else '#DC2626')};
-                }}
-            """)
-        
-        # Connect delete button to handler
-        delete_button.clicked.connect(self.handle_delete_selected)
-        
         # Assemble the bottom layout
-        bottom_layout.addWidget(select_all_btn)
         bottom_layout.addStretch()
         bottom_layout.addWidget(pagination_container)
         bottom_layout.addStretch()
-        bottom_layout.addWidget(add_button)
-        bottom_layout.addSpacing(10)
-        bottom_layout.addWidget(delete_button)
+
         
         return bottom_layout
 
@@ -191,6 +192,11 @@ class StatusKetersediaanController(QWidget):
         total_records = cursor.fetchone()[0]
         self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
         conn.close()
+
+        # If no records, hide pagination and return empty container
+        if total_records == 0:
+            pagination_container.hide()
+            return pagination_container
         
         # Style for all pagination buttons
         button_style = """
@@ -400,7 +406,6 @@ class StatusKetersediaanController(QWidget):
             
             # Set up table rows
             self.table.setRowCount(len(data))
-            print(data)
             for row, record in enumerate(data):                
                 # Add data cells
                 for col, value in enumerate(record):
@@ -424,7 +429,7 @@ class StatusKetersediaanController(QWidget):
 
     def create_status_cell(self, row, col, is_pinjam):
         """Create a styled status cell indicating whether a customer has borrowed items."""
-        status_text = "Pinjam" if is_pinjam else "Tidak Pinjam"
+        status_text = "Tersedia" if is_pinjam else "Tidak Tersedia"
         status_btn = QPushButton(status_text)
         status_btn.setStyleSheet(f"""
             QPushButton {{
@@ -539,3 +544,4 @@ class StatusKetersediaanController(QWidget):
         finally:
             if conn:
                 conn.close()
+

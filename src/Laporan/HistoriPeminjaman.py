@@ -1,7 +1,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
-                           QLabel, QTableWidget, QTableWidgetItem, QHeaderView, 
+                           QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QComboBox,
                            QFrame, QSizePolicy, QCheckBox, QToolButton, QDesktopWidget)
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
@@ -11,9 +11,14 @@ class HistoriPeminjamanController(QWidget):
     def __init__(self, schema_path, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
+
+        self.ui = HistoriPeminjamanUI()
         
         # Initialize screen dimensions and layout calculations
-        self.setup_window_geometry()
+        self.ui.setup_window_geometry()
+        self.available_width = self.ui.available_width
+        self.screen_width = self.ui.screen_width
+        self.screen_height = self.ui.screen_height
         
         # Store important paths for database access
         self.schema_path = schema_path
@@ -40,24 +45,14 @@ class HistoriPeminjamanController(QWidget):
         # Load the initial data
         self.load_data()
 
-    def setup_window_geometry(self):
-        """Set up the window geometry based on screen dimensions."""
-        # Get screen dimensions
-        screen = QDesktopWidget().screenGeometry()
-        self.setGeometry(0, 0, screen.width(), screen.height())
-        
-        # Calculate available width (total width minus 25% for sidebar)
-        self.available_width = screen.width() - (screen.width() * 0.25) 
-        
-        # Store dimensions for later use
-        self.screen_width = screen.width()
-        self.screen_height = screen.height()
-
     def setup_main_layout(self):
         """Set up the main layout with proper spacing and margins."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
+
+        top_bar = self.setup_top_bar()
+        layout.addLayout(top_bar)
         
         # Initialize and setup the table
         self.setup_table()
@@ -121,6 +116,49 @@ class HistoriPeminjamanController(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
 
+    def setup_top_bar(self):
+        top_bar = QHBoxLayout()
+
+        self.periode_dropdown = QComboBox()
+        self.periode_dropdown.setFont(QFont("Poly", 12))
+        self.periode_dropdown.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                padding-left: 20px;
+                border: 1px solid #D1D5DB;
+                border-radius: 5px;
+                background-color: #FFFFFF;
+            }
+        """)
+        self.periode_dropdown.addItem("All Periode")
+        self.periode_dropdown.addItems(self.get_unique_month())
+        self.periode_dropdown.currentIndexChanged.connect(self.apply_filters)
+
+        top_bar.addWidget(self.periode_dropdown)
+        top_bar.addStretch()
+
+        return top_bar
+
+    def get_unique_month(self):
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT strftime('%m' ,TanggalPeminjaman) AS bulan FROM Peminjaman")
+            months = cursor.fetchall()
+
+            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt','Nov','Dec']
+            print("ok")
+            print([month[0] for month in months])
+            return [month_names[int(month[0]) - 1] for month in months]
+            
+        except sqlite3.Error as e:
+            print(f"Error getting unique month: {e}")
+            return []
+            
+        finally:
+            if conn:
+                conn.close()
+
     def setup_bottom_controls(self):
         """Set up the bottom controls with proper spacing and alignment."""
         bottom_layout = QHBoxLayout()
@@ -167,14 +205,11 @@ class HistoriPeminjamanController(QWidget):
         # Connect delete button to handler
         delete_button.clicked.connect(self.handle_delete_selected)
         
-        # Assemble the bottom layout
-        bottom_layout.addWidget(select_all_btn)
+
         bottom_layout.addStretch()
         bottom_layout.addWidget(pagination_container)
         bottom_layout.addStretch()
-        bottom_layout.addWidget(add_button)
-        bottom_layout.addSpacing(10)
-        bottom_layout.addWidget(delete_button)
+
         
         return bottom_layout
 
@@ -389,16 +424,34 @@ class HistoriPeminjamanController(QWidget):
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
-            # Calculate offset based on current page
+
+            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt','Nov','Dec']
+
+            month = self.periode_dropdown.currentText()
             offset = (self.current_page - 1) * self.items_per_page
-            cursor.execute(f'''
-                SELECT ID, NomorPlat, NIK, Nama, Kontak, TanggalPeminjaman, TanggalPengembalian, TenggatPengembalian
-                FROM Peminjaman
-                LIMIT {self.items_per_page} 
-                OFFSET {offset}
-            ''')
-            data = cursor.fetchall()
+
+            if month == 'All Periode' :
+                cursor.execute(f'''
+                    SELECT ID, NomorPlat, NIK, Nama, Kontak, TanggalPeminjaman, TanggalPengembalian, TenggatPengembalian
+                    FROM Peminjaman
+                    LIMIT {self.items_per_page} 
+                    OFFSET {offset}
+                ''')
+                data = cursor.fetchall()
+            else :
+                idx = 0
+                for i in range(12):
+                    if (month_names[i] == month):
+                        idx = i + 1
+
+                cursor.execute(f'''
+                    SELECT ID, NomorPlat, NIK, Nama, Kontak, TanggalPeminjaman, TanggalPengembalian, TenggatPengembalian
+                    FROM Peminjaman
+                    WHERE strftime('%m', TanggalPeminjaman) = ?
+                    LIMIT {self.items_per_page} 
+                    OFFSET {offset}, (idx, )
+                ''')
+                data = cursor.fetchall()               
             
             # Set up table rows
             self.table.setRowCount(len(data))
@@ -538,3 +591,21 @@ class HistoriPeminjamanController(QWidget):
         finally:
             if conn:
                 conn.close()
+
+    def apply_filters(self):
+        """Apply filters based on the selected color and year."""
+        self.load_data()
+
+class HistoriPeminjamanUI(QWidget):
+    def setup_window_geometry(self):
+        """Set up the window geometry based on screen dimensions."""
+        # Get screen dimensions
+        screen = QDesktopWidget().screenGeometry()
+        self.setGeometry(0, 0, screen.width(), screen.height())
+        
+        # Calculate available width (total width minus 25% for sidebar)
+        self.available_width = screen.width() - (screen.width() * 0.25) 
+        
+        # Store dimensions for later use
+        self.screen_width = screen.width()
+        self.screen_height = screen.height()

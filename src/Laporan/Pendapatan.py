@@ -2,16 +2,16 @@ import sys
 import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
                            QLabel, QTableWidget, QTableWidgetItem, QHeaderView, 
-                           QFrame, QSizePolicy, QCheckBox, QToolButton, QDesktopWidget)
+                           QFrame, QSizePolicy, QCheckBox, QToolButton, QDesktopWidget, QComboBox)
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
-import sqlite3
+import sqlite3, locale
 
 class PendapatanController(QWidget):
     def __init__(self, schema_path, parent=None):
         """Initialize the Pelanggan (Customer) UI with complete styling and functionality."""
         super().__init__(parent)
-        
+
         # Initialize screen dimensions and layout calculations
         self.setup_window_geometry()
         
@@ -31,34 +31,46 @@ class PendapatanController(QWidget):
         self.next_button = None
         self.last_button = None
         
-        # Initialize database before setting up UI
+        # Initialize database and UI
         self.init_database()
-        
-        # Create main layout with proper spacing
         self.setup_main_layout()
-        
-        # Load the initial data
         self.load_data()
 
     def setup_window_geometry(self):
         """Set up the window geometry based on screen dimensions."""
-        # Get screen dimensions
         screen = QDesktopWidget().screenGeometry()
         self.setGeometry(0, 0, screen.width(), screen.height())
-        
-        # Calculate available width (total width minus 25% for sidebar)
         self.available_width = screen.width() - (screen.width() * 0.25) 
-        
-        # Store dimensions for later use
         self.screen_width = screen.width()
         self.screen_height = screen.height()
 
     def setup_main_layout(self):
         """Set up the main layout with proper spacing and margins."""
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
         
+        # Calculate total pages
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM (SELECT ID, Nama, TanggalPeminjaman, TanggalPengembalian, TenggatPengembalian, BesarPembayaran FROM Peminjaman)')
+        total_records = cursor.fetchone()[0]
+        self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
+        conn.close()
+
+        # If no records, hide pagination and return empty container
+        self.message_error = QLabel("Tidak Data", self)
+        self.message_error.hide()
+        if total_records == 0:
+            self.message_error.setAlignment(Qt.AlignCenter)
+            self.message_error.setStyleSheet("font-size: 42px; font-family: 'Poly', sans-serif; color: #6B7280;")
+            layout.addWidget(self.message_error)
+            return
+
+        top_layout = self.setup_top_bar()
+        layout.addLayout(top_layout)
+
         # Initialize and setup the table
         self.setup_table()
         layout.addWidget(self.table)
@@ -123,58 +135,50 @@ class PendapatanController(QWidget):
         """Set up the bottom controls with proper spacing and alignment."""
         bottom_layout = QHBoxLayout()
         
-        # Create Select/Deselect All button
-        select_all_btn = QPushButton("Select/Deselect All")
-        select_all_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #f5f5f5;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                color: #666666;
-                font-family: 'Poly', sans-serif;
-                font-size: 13px;
-            }
-            QPushButton:hover {
-                background-color: #e8e8e8;
-            }
-        """)
-        select_all_btn.clicked.connect(self.toggle_select_all)
-        
         # Set up pagination
         pagination_container = self.setup_pagination()
         
-        # Create action buttons
-        add_button = QPushButton("+")
-        delete_button = QPushButton("×")
-        
-        for btn in (add_button, delete_button):
-            btn.setFixedSize(56, 56)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {('#10B981' if btn == add_button else '#EF4444')};
-                    border-radius: 28px;
-                    color: white;
-                    font-size: 24px;
-                }}
-                QPushButton:hover {{
-                    background-color: {('#059669' if btn == add_button else '#DC2626')};
-                }}
-            """)
-        
-        # Connect delete button to handler
-        delete_button.clicked.connect(self.handle_delete_selected)
-        
         # Assemble the bottom layout
-        bottom_layout.addWidget(select_all_btn)
         bottom_layout.addStretch()
         bottom_layout.addWidget(pagination_container)
         bottom_layout.addStretch()
-        bottom_layout.addWidget(add_button)
-        bottom_layout.addSpacing(10)
-        bottom_layout.addWidget(delete_button)
         
         return bottom_layout
+
+    def get_total_pembayaran(self):
+        conn = sqlite3.connect(self.db_path)  # Ganti dengan nama database Anda
+        cursor = conn.cursor()
+
+        # Query untuk mengambil total jumlah
+        cursor.execute("SELECT sum(BesarPembayaran) AS totalPembayaran FROM Peminjaman WHERE StatusPembayaran = 1")
+        result = cursor.fetchone()  # Ambil hasil pertama (karena hanya ada satu baris)
+        
+        # Tutup koneksi setelah selesai
+        conn.close()
+        return result[0] 
+
+    def setup_top_bar(self):
+        top_bar = QHBoxLayout()
+
+        locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
+
+        total = self.get_total_pembayaran()
+        formatted_number = locale.currency(total, grouping=True)
+        label = QLabel(f"Total Pembayaran: {formatted_number}")
+
+        label.setStyleSheet("""
+            background-color: #D3D3D3;   /* Warna abu-abu */
+            border-radius: 15px;         /* Sudut bundar */
+            padding: 10px;               /* Ruang di dalam label */
+            font-size: 14px;             /* Ukuran font */
+            font-family: 'Poly', sans-serif;
+            color: black;                /* Warna teks */
+        """)
+
+        top_bar.addWidget(label)
+        top_bar.addStretch()
+
+        return top_bar
 
     def setup_pagination(self):
         """Set up pagination with a fixed window of 5 pages plus First/Last buttons."""
@@ -187,10 +191,15 @@ class PendapatanController(QWidget):
         # Calculate total pages
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM (SELECT NomorPlat, Model, Warna, Tahun, StatusKetersediaan FROM Mobil)')
+        cursor.execute('SELECT COUNT(*) FROM (SELECT ID, Nama, TanggalPeminjaman, TanggalPengembalian, TenggatPengembalian, BesarPembayaran FROM Peminjaman)')
         total_records = cursor.fetchone()[0]
         self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
         conn.close()
+
+        # If no records, hide pagination and return empty container
+        if total_records == 0:
+            pagination_container.hide()
+            return pagination_container
         
         # Style for all pagination buttons
         button_style = """
@@ -392,7 +401,7 @@ class PendapatanController(QWidget):
             offset = (self.current_page - 1) * self.items_per_page
             cursor.execute(f'''
                 SELECT ID, Nama, TanggalPeminjaman, TanggalPengembalian, TenggatPengembalian, BesarPembayaran
-                FROM Peminjaman
+                FROM Peminjaman WHERE StatusPembayaran = 1
                 LIMIT {self.items_per_page} 
                 OFFSET {offset}
             ''')
@@ -419,120 +428,3 @@ class PendapatanController(QWidget):
             if conn:
                 conn.close()
 
-    def create_status_cell(self, row, col, is_pinjam):
-        """Create a styled status cell indicating whether a customer has borrowed items."""
-        status_text = "Pinjam" if is_pinjam else "Tidak Pinjam"
-        status_btn = QPushButton(status_text)
-        status_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {'#D1FAE5' if is_pinjam else '#FEE2E2'};
-                color: {'#10B981' if is_pinjam else '#EF4444'};
-                border: 1px solid {'#10B981' if is_pinjam else '#EF4444'};
-                border-radius: 10px;
-                padding-right: 12px;
-                padding-left: 12px;
-                min-height: 30px;
-                min-width: 100px;
-                font-family: 'Poly', sans-serif;
-                font-weight: 500;
-                font-size: 14px;
-                text-align: center;
-            }}
-        """)
-        
-        container = QWidget()
-        layout = QHBoxLayout(container)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.addWidget(status_btn, alignment=Qt.AlignCenter)
-        self.table.setCellWidget(row, col, container)
-
-    def handle_edit(self, row):
-        """Handle the edit action when a customer's edit button is clicked."""
-        # Get the NIK of the selected customer
-        nik_item = self.table.item(row, 1)
-        if nik_item:
-            nik = nik_item.text()
-            print(f"Editing customer with NIK: {nik}")
-            # TODO: Implement edit dialog functionality
-
-    def toggle_select_all(self, checked=None):
-        """Toggle selection state of all checkboxes in the table."""
-        # If checked is None, determine state based on first checkbox
-        if checked is None:
-            first_checkbox = self.get_checkbox(0)
-            if first_checkbox:
-                checked = not first_checkbox.isChecked()
-        
-        # Update all checkboxes
-        for row in range(self.table.rowCount()):
-            checkbox = self.get_checkbox(row)
-            if checkbox:
-                checkbox.setChecked(checked)
-
-    def get_checkbox(self, row):
-        """Helper method to get checkbox widget from a specific row."""
-        checkbox_container = self.table.cellWidget(row, 0)
-        if checkbox_container:
-            return checkbox_container.layout().itemAt(0).widget()
-        return None
-
-    def get_selected_rows(self):
-        """Get a list of indices for all selected rows."""
-        selected_rows = []
-        for row in range(self.table.rowCount()):
-            checkbox = self.get_checkbox(row)
-            if checkbox and checkbox.isChecked():
-                selected_rows.append(row)
-        return selected_rows
-
-    def handle_delete_selected(self):
-        """Delete all selected customers from the database."""
-        selected_rows = self.get_selected_rows()
-        if not selected_rows:
-            return
-
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            for row in selected_rows:
-                nik_item = self.table.item(row, 1)
-                if nik_item:
-                    nik = nik_item.text()
-                    cursor.execute('DELETE FROM Pelanggan WHERE NIK = ?', (nik,))
-            
-            conn.commit()
-            
-            # Recalculate total pages and adjust current page if needed
-            cursor.execute('SELECT COUNT(*) FROM Pelanggan')
-            total_records = cursor.fetchone()[0]
-            new_total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
-            
-            # Adjust current page if it's now beyond the total pages
-            if self.current_page > new_total_pages:
-                self.current_page = max(1, new_total_pages)
-            
-            # Reload data and update pagination
-            self.load_data()
-            
-            # Recreate pagination controls
-            bottom_layout = self.findChild(QHBoxLayout)
-            if bottom_layout:
-                # Find and remove old pagination container
-                for i in range(bottom_layout.count()):
-                    item = bottom_layout.itemAt(i)
-                    if item and isinstance(item.widget(), QWidget):
-                        if isinstance(item.widget().layout(), QHBoxLayout):
-                            item.widget().deleteLater()
-                            break
-                
-                # Create and add new pagination container
-                new_pagination = self.setup_pagination()
-                bottom_layout.insertWidget(2, new_pagination)
-            
-        except sqlite3.Error as e:
-            print(f"Error deleting records: {e}")
-            
-        finally:
-            if conn:
-                conn.close()
