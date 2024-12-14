@@ -76,13 +76,11 @@ class MobilController(QWidget):
         self.grid_layout.setSpacing(45)  # Set spacing between items in the grid layout
         main_layout.addLayout(self.grid_layout)
 
-        # Load cars from database
-
         # Pagination and bottom controls
-        bottom_layout = self.setup_bottom_controls()
-        bottom_widget = QWidget()
-        bottom_widget.setLayout(bottom_layout)
-        main_layout.addWidget(bottom_widget)  # Use addWidget instead of addLayout
+        self.bottom_layout = self.setup_bottom_controls()
+        self.bottom_widget = QWidget()
+        self.bottom_widget.setLayout(self.bottom_layout)
+        main_layout.addWidget(self.bottom_widget)  # Use addWidget instead of addLayout
         
         self.showMobil()
 
@@ -248,104 +246,6 @@ class MobilController(QWidget):
 
         self.setup_pagination(total_records)
 
-    def setup_pagination(self, total_records):
-        """Set up pagination with a fixed window of 5 pages plus First/Last buttons."""
-        # Create container widget
-        pagination_container = QWidget()
-        pagination_container.setFixedHeight(50)  # Set a fixed height for the pagination container
-        pagination_layout = QHBoxLayout(pagination_container)
-        pagination_layout.setContentsMargins(0, 0, 0, 0)
-        pagination_layout.setSpacing(8)
-        
-        # Add stretchable spacers on both sides of the pagination buttons
-        pagination_layout.addStretch()
-
-        # Calculate total pages
-        self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
-        # Style for all pagination buttons
-        button_style = """
-            QPushButton {
-                background: none;
-                border: none;
-                color: #374151;
-                font-family: 'Poly', sans-serif;
-                font-size: 14px;
-                padding: 8px;
-                min-width: 30px;
-            }
-            QPushButton:hover { color: #000000; }
-            QPushButton:disabled { color: #9CA3AF; }
-            QPushButton[current="true"] {
-                font-weight: bold;
-                color: #000000;
-            }
-        """
-        
-        # Clear existing buttons
-        self.pagination_buttons = []
-        
-        # Create navigation buttons
-        self.first_button = QPushButton("First")
-        self.prev_button = QPushButton("←")
-        self.next_button = QPushButton("→")
-        self.last_button = QPushButton("Last")
-        
-        for btn in [self.first_button, self.prev_button, self.next_button, self.last_button]:
-            btn.setStyleSheet(button_style)
-        
-        # Add First and Prev buttons
-        pagination_layout.addWidget(self.first_button)
-        pagination_layout.addWidget(self.prev_button)
-        
-        # Calculate the range of pages to display (sliding window of 5)
-        def calculate_page_range():
-            n = 5  # Number of page buttons to show
-            if self.total_pages <= n:
-                # If total pages is less than window size, show all pages
-                start_page = 1
-                end_page = self.total_pages
-            else:
-                # Calculate the start page based on current page
-                start_page = max(1, min(self.current_page - n//2, self.total_pages - n + 1))
-                end_page = start_page + n - 1
-                
-                # Adjust if we're near the end
-                if end_page > self.total_pages:
-                    end_page = self.total_pages
-                    start_page = max(1, end_page - n + 1)
-            
-            return range(start_page, end_page + 1)
-        
-        # Add page buttons
-        for page in calculate_page_range():
-            btn = QPushButton(str(page))
-            btn.setStyleSheet(button_style)
-            if page == self.current_page:
-                btn.setProperty("current", "true")
-                btn.setStyleSheet(button_style + "font-weight: bold;")
-            btn.setProperty("page_number", page)
-            btn.clicked.connect(lambda checked, p=page: self.go_to_page(page))
-            self.pagination_buttons.append(btn)
-            pagination_layout.addWidget(btn)
-        
-        # Add Next and Last buttons
-        pagination_layout.addWidget(self.next_button)
-        pagination_layout.addWidget(self.last_button)
-        
-        # Add stretchable spacers on both sides of the pagination buttons
-        pagination_layout.addStretch()
-        
-        # Connect navigation button signals
-        self.first_button.clicked.connect(lambda: self.go_to_page(1))
-        self.prev_button.clicked.connect(self.prev_page)
-        self.next_button.clicked.connect(self.next_page)
-        self.last_button.clicked.connect(lambda: self.go_to_page(self.total_pages))
-        
-        # Update button states
-        self.update_pagination_buttons()
-        
-        return pagination_container
-
     def update_pagination_buttons(self):
         """Update the enabled state of all pagination buttons."""
         if all([self.first_button, self.prev_button, self.next_button, self.last_button]):
@@ -425,7 +325,6 @@ class MobilController(QWidget):
                 if checkbox and checkbox.isChecked():
                     label = widget.findChild(QLabel, "plate")
                     if label:
-                        print(True)
                         selected_ids.append(label.text())
         return selected_ids
 
@@ -465,7 +364,21 @@ class MobilController(QWidget):
         select_all_btn.clicked.connect(toggle_select_all)
         
         # Create pagination container
-        pagination_container = self.setup_pagination(0)  # Initial setup with 0 total records
+        pagination_container = QWidget()
+        pagination_container.setFixedHeight(50)  # Set a fixed height for the pagination container
+        pagination_layout = QHBoxLayout(pagination_container)
+        pagination_layout.setContentsMargins(0, 0, 0, 0)
+        pagination_layout.setSpacing(8)
+        
+        # Add stretchable spacers on both sides of the pagination buttons
+        pagination_layout.addStretch()
+        self.pagination_layout = pagination_layout  # Store the pagination layout for later use
+        pagination_layout.addStretch()
+        
+        bottom_layout.addWidget(select_all_btn)
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(pagination_container)
+        bottom_layout.addStretch()
         
         # Create Add/Delete buttons with distinct styling
         add_button = QPushButton("+")
@@ -490,12 +403,87 @@ class MobilController(QWidget):
         delete_button.clicked.connect(self.delete_mobil)
         
         # Assemble bottom layout
-        bottom_layout.addWidget(select_all_btn)
-        bottom_layout.addStretch()
-        bottom_layout.addWidget(pagination_container)
-        bottom_layout.addStretch()
         bottom_layout.addWidget(add_button)
         bottom_layout.addSpacing(10)
         bottom_layout.addWidget(delete_button)
         
         return bottom_layout
+
+    def setup_pagination(self, total_records):
+        """Set up pagination with a fixed window of 5 pages plus First/Last buttons."""
+        # Calculate total pages
+        self.total_pages = (total_records + self.items_per_page - 1) // self.items_per_page
+
+        # Clear existing buttons
+        for btn in self.pagination_buttons:
+            btn.setParent(None)
+        self.pagination_buttons = []
+
+        # Style for all pagination buttons
+        button_style = """
+            QPushButton {
+                background: none;
+                border: none;
+                color: #374151;
+                font-family: 'Poly', sans-serif;
+                font-size: 14px;
+                padding: 8px;
+                min-width: 30px;
+            }
+            QPushButton:hover { color: #000000; }
+            QPushButton:disabled { color: #9CA3AF; }
+            QPushButton[current="true"] {
+                font-weight: bold;
+                color: #000000;
+            }
+        """
+        
+        # Create navigation buttons if they don't exist
+        if not self.first_button:
+            self.first_button = QPushButton("First")
+            self.prev_button = QPushButton("←")
+            self.next_button = QPushButton("→")
+            self.last_button = QPushButton("Last")
+            for btn in [self.first_button, self.prev_button, self.next_button, self.last_button]:
+                btn.setStyleSheet(button_style)
+                self.pagination_layout.insertWidget(1, btn)  # Insert buttons into the pagination layout
+
+        # Calculate the range of pages to display (sliding window of 5)
+        def calculate_page_range():
+            n = 5  # Number of page buttons to show
+            if self.total_pages <= n:
+                # If total pages is less than window size, show all pages
+                start_page = 1
+                end_page = self.total_pages
+            else:
+                # Calculate the start page based on current page
+                start_page = max(1, min(self.current_page - n//2, self.total_pages - n + 1))
+                end_page = start_page + n - 1
+                
+                # Adjust if we're near the end
+                if end_page > self.total_pages:
+                    end_page = self.total_pages
+                    start_page = max(1, end_page - n + 1)
+            
+            return range(start_page, end_page + 1)
+        
+        # Add page buttons
+        for page in calculate_page_range():
+            btn = QPushButton(str(page))
+            btn.setStyleSheet(button_style)
+            if page == self.current_page:
+                btn.setProperty("current", "true")
+                btn.setStyleSheet(button_style + "font-weight: bold;")
+            btn.setProperty("page_number", page)
+            btn.clicked.connect(lambda checked, p=page: self.go_to_page(page))
+            self.pagination_buttons.append(btn)
+            self.pagination_layout.insertWidget(-2, btn)  # Insert buttons before the Next button
+
+        # Connect navigation button signals
+        self.first_button.clicked.connect(lambda: self.go_to_page(1))
+        self.prev_button.clicked.connect(self.prev_page)
+        self.next_button.clicked.connect(self.next_page)
+        self.last_button.clicked.connect(lambda: self.go_to_page(self.total_pages))
+        
+        # Update button states
+        self.update_pagination_buttons()

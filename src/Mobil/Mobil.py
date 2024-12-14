@@ -93,6 +93,7 @@ class Mobil:
             count_query = f'SELECT COUNT(*) FROM ({query})'
             cursor.execute(count_query, params)
             total_records = cursor.fetchone()[0]
+            print(total_records)
             
             # Add pagination to the query
             query += ' LIMIT ? OFFSET ?'

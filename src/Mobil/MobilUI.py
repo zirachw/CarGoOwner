@@ -1,10 +1,10 @@
 from PyQt5.QtCore import Qt, QRegExp
 from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtWidgets import (
-    QDialog, QDesktopWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QLineEdit
+    QDialog, QDesktopWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QLineEdit, QFileDialog
 )
+from Mobil.Mobil import Mobil
 import re
-
 
 class MobilUI(QWidget):
     @staticmethod
@@ -83,7 +83,7 @@ class MobilUI(QWidget):
         icon_label = QLabel(icon_container)
         icon_label.setFixedSize(40, 40)
         icon_label.setAlignment(Qt.AlignCenter)
-        icon_label.setText("👥")
+        icon_label.setText("🚗")
         icon_label.setStyleSheet("""
             QLabel {
                 padding: 0;
@@ -168,43 +168,60 @@ class MobilUI(QWidget):
             input_error_layout = QVBoxLayout(input_error_container)
             input_error_layout.setContentsMargins(0, 0, 0, 0)
             input_error_layout.setSpacing(2)
-            
-            input_field = QLineEdit()
-            input_field.setFixedHeight(44)
-            input_field.setPlaceholderText(placeholders[field])
-            
-            # Set field-specific validators
-            if field == 'NomorPlat':
-                input_field.setValidator(QRegExpValidator(QRegExp(r'[A-Z]{1,2}\s\d{1,4}\s[A-Z]{1,3}')))
-            elif field == 'Tahun':
-                input_field.setValidator(QRegExpValidator(QRegExp(r'\d{4}')))
-            elif field == 'StatusKetersediaan':
-                input_field.setValidator(QRegExpValidator(QRegExp(r'[01]')))
+
+            def select_image(inputs):
+                """Open a file dialog to select an image and convert it to bytes."""
+                options = QFileDialog.Options()
+                file_path, _ = QFileDialog.getOpenFileName(None, "Select Image", "", "Image Files (*.png *.jpg *.jpeg *.bmp)", options=options)
+                if file_path:
+                    with open(file_path, 'rb') as file:
+                        image_data = file.read()
+                        inputs['Gambar'].setProperty('image_data', image_data)
+                        inputs['Gambar'].setText("Image Selected")
+                    
+            if field == 'Gambar':
+                input_field = QPushButton("Select Image")
+                input_field.setFixedHeight(44)
+                input_field.clicked.connect(lambda: select_image(inputs))
+                if mode == "edit" and mobil_data:
+                    inputs['Gambar'] = mobil_data['Gambar']  # Use old image data if not changed
+            else:
+                input_field = QLineEdit()
+                input_field.setFixedHeight(44)
+                input_field.setPlaceholderText(placeholders[field])
                 
-            # Set existing values in edit mode
-            if mode == "edit" and mobil_data:
-                input_field.setText(str(mobil_data[field]))
-                
-            input_field.setStyleSheet("""
-                QLineEdit {
-                    padding: 12px;
-                    border: 1px solid #E5E7EB;
-                    border-radius: 8px;
-                    background-color: white;
-                    font-family: 'Poly', sans-serif;
-                    font-size: 14px;
-                    margin: 0;
-                }
-                QLineEdit:focus {
-                    border: 1px solid #9CA3AF;
-                }
-                QLineEdit[invalid="true"] {
-                    border: 1px solid #EF4444;
-                }
-                QLineEdit::placeholder {
-                    color: #9CA3AF;
-                }
-            """)
+                # Set field-specific validators
+                if field == 'NomorPlat':
+                    input_field.setValidator(QRegExpValidator(QRegExp(r'[A-Z]{1,2}\s\d{1,4}\s[A-Z]{1,3}')))
+                elif field == 'Tahun':
+                    input_field.setValidator(QRegExpValidator(QRegExp(r'\d{4}')))
+                elif field == 'StatusKetersediaan':
+                    input_field.setValidator(QRegExpValidator(QRegExp(r'[01]')))
+                    
+                # Set existing values in edit mode
+                if mode == "edit" and mobil_data:
+                    input_field.setText(str(mobil_data[field]))
+                    
+                input_field.setStyleSheet("""
+                    QLineEdit {
+                        padding: 12px;
+                        border: 1px solid #E5E7EB;
+                        border-radius: 8px;
+                        background-color: white;
+                        font-family: 'Poly', sans-serif;
+                        font-size: 14px;
+                        margin: 0;
+                    }
+                    QLineEdit:focus {
+                        border: 1px solid #9CA3AF;
+                    }
+                    QLineEdit[invalid="true"] {
+                        border: 1px solid #EF4444;
+                    }
+                    QLineEdit::placeholder {
+                        color: #9CA3AF;
+                    }
+                """)
             
             error_label = QLabel()
             error_label.setFixedHeight(20)
@@ -231,6 +248,7 @@ class MobilUI(QWidget):
             
         # Create confirm button
         confirm_btn = QPushButton("Confirm" if mode == "create" else "Save Changes")
+        confirm_btn.clicked.connect(lambda: dialog.accept()) 
         confirm_btn.setFixedSize(376, 44)
         confirm_btn.setStyleSheet("""
             QPushButton {
@@ -279,16 +297,18 @@ class MobilUI(QWidget):
             input_field.style().polish(input_field)
             
             # Update confirm button state
-            confirm_btn.setEnabled(all(validation_states.values()))
+            confirm_btn.setEnabled(all(validation_states.values()) or mode == "edit")
         
         # Connect validation to text changes
         for field, input_field in inputs.items():
-            input_field.textChanged.connect(lambda text, f=field: validate_field(f, text))
+            if field != 'Gambar':
+                input_field.textChanged.connect(lambda text, f=field: validate_field(f, text))
             
         # Initial validation for edit mode
         if mode == "edit" and mobil_data:
             for field in inputs:
-                validate_field(field, str(mobil_data[field]))
+                if field != 'Gambar':
+                    validate_field(field, str(mobil_data[field]))
         
         # Connect confirm button
         confirm_btn.clicked.connect(dialog.accept)
@@ -297,7 +317,7 @@ class MobilUI(QWidget):
         
         # Execute dialog and return results
         if dialog.exec_() == QDialog.Accepted:
-            return dialog, {field: input_field.text() for field, input_field in inputs.items()}
+            return dialog, {field: (input_field.text() if field != 'Gambar' else input_field.property('image_data') if input_field.property('image_data') else mobil_data['Gambar']) for field, input_field in inputs.items()}
         return None, None
 
     @staticmethod
