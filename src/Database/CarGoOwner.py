@@ -94,7 +94,7 @@ class DatabaseManager:
             ('Daihatsu', ['Xenia', 'Terios', 'Ayla', 'Sigra', 'Rocky'])
         ]
         
-        img_random = ['./src/Component/Mobil/battery.jpeg', './src/Component/Mobil/Nice.jpeg']
+        img_random = ['./src/Component/Mobil/mobil1.jpg', './src/Component/Mobil/mobil2.jpg', './src/Component/Mobil/mobil3.jpg', './src/Component/Mobil/mobil4.jpg', './src/Component/Mobil/mobil5.jpg','./src/Component/Mobil/mobil6.jpg']
 
         colors = ['Hitam', 'Putih', 'Silver', 'Merah', 'Biru', 'Abu-abu']
         current_year = datetime.now().year

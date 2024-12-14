@@ -9,6 +9,7 @@ from Notifikasi.NotifikasiController import JadwalPengembalian, PembayaranRental
 from Laporan.HistoriPeminjaman import HistoriPeminjamanController
 from Laporan.Pendapatan import PendapatanController
 from Laporan.StatusKetersediaan import StatusKetersediaanController
+from Database.CarGoOwner import DatabaseManager
 
 class MenuUI(QMainWindow):
     def __init__(self):
@@ -23,7 +24,8 @@ class MenuUI(QMainWindow):
         self.setMinimumSize(self.screen.width(), self.screen.height()) 
         self.setStyleSheet("background-color : #FFFFFF")
         self.sidebar_width = int(self.screen.width() * 0.2)
-        
+
+        db = DatabaseManager().createDatabase()
         # Main container widget
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
